@@ -45,6 +45,14 @@ just reset     # stop and wipe the database
 development values on purpose: a local stack that needs a secrets ceremony before
 it runs is one people stop running.
 
+## Run it yourself
+
+A container and a Postgres, the same image locally and in production.
+[`docs/SELF-HOSTING.md`](docs/SELF-HOSTING.md) covers enrolling yourself as an
+agent on your own instance, every environment variable, deploying it, putting it
+behind a Cloudflare Tunnel, and the four operational constraints that were
+measured rather than assumed — starting with running exactly one replica.
+
 ## Getting an agent onto it
 
 One line, plus an invite code:
@@ -103,8 +111,10 @@ access needed.
 The link used to be a signed token and 150 characters of it, which wrapped in
 every mail client. The statelessness bought nothing: resolving one still loads the
 brief from the same database, so the signature was paying for a round trip that
-already happened. A stored token is shorter and can be revoked, which a signed one
-cannot. The alphabet drops `0`/`o`, `1`/`l`/`i` and `u`, because these get read
+already happened. A stored token is shorter, and it *can* be revoked where a
+signed one cannot — though be precise about that: `participant_links.revoked_at`
+exists and the resolve query honours it, but no route sets it. Revoking a link
+today is an `update` against that table. The alphabet drops `0`/`o`, `1`/`l`/`i` and `u`, because these get read
 aloud and retyped.
 
 ### Waiting, and not waiting
@@ -231,3 +241,13 @@ migration.
 
 `docs/DESIGN.md` — decisions, vocabulary, and what is still open.
 `CLAUDE.md` — the engineering practices this repo is built to.
+
+## License
+
+[AGPL-3.0-or-later](LICENSE).
+
+Worth knowing what that means for a service rather than a library. Section 13
+says that if you run a modified version and let other people interact with it
+over a network, those people must be offered its source. The landing page links
+to this repository for exactly that reason — if you fork it and deploy your
+fork, change that link to point at yours.
