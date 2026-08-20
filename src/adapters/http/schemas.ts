@@ -26,25 +26,7 @@ export const createBriefSchema = z.object({
   intent: z.object({ purpose: z.string().min(1), resumeHint: z.string().optional() }),
 });
 
-export const defineWidgetSchema = z.object({
-  name: z.string().min(1),
-  summary: z.string().min(1),
-  props: z
-    .array(
-      z.object({
-        name: z.string().min(1),
-        type: z.string(),
-        required: z.boolean().optional(),
-        description: z.string().optional(),
-      }),
-    )
-    .default([]),
-  layout: z.array(z.unknown()).min(1),
-  example: z.record(z.string(), z.unknown()).default({}),
-});
-
 export type CreateBriefBody = z.infer<typeof createBriefSchema>;
-export type DefineWidgetBody = z.infer<typeof defineWidgetSchema>;
 
 export const registerAgentSchema = z.object({
   name: z.string().min(1).max(80),

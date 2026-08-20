@@ -23,6 +23,16 @@ a brief rather than a chat question:
 Hand over the link and stop. Do not paraphrase the questions back into chat —
 the whole point is finding out whether the brief carries them on its own.
 
+**Then actually wait on it.** Handing over a link and moving on means the operator
+answers into silence, which is worse than not asking. Two rules, both learned the
+hard way:
+
+- **Never `closeWhen: manual` on a brief you intend to wait for.** A manual brief
+  cannot close by itself, so no signal ever fires and `await_responses` would hang
+  for ever. Use `all` — it closes the moment the last person answers.
+- **Call `await_responses` in the same turn you hand over the link**, or say
+  explicitly when you will check back. In a long-running session, waiting is free.
+
 Two things this is for, beyond the answers. It is the only honest test of whether
 the widget set covers real questions: reaching for `raw`, or wishing for a widget
 that does not exist, is the signal to define one. And a brief that is tedious to

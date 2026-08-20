@@ -1,9 +1,8 @@
 // The registry: how a name plus props becomes primitive blocks.
 //
-// A widget is DATA -- a props declaration and a layout template, both stored as
-// rows. That is the whole point: an agent that needs a widget the library has not
-// got writes a new definition and uses it in the same turn. If adding a widget
-// ever requires a deploy, the escape hatch is shut exactly when it is needed.
+// A widget is a props declaration and a layout template. Both are data, but data
+// that ships with the service and changes by pull request -- an agent cannot add
+// one, and the shared vocabulary is therefore reviewed rather than accumulated.
 //
 // The template language is deliberately three constructs. It is a layout binder,
 // not a programming language, and every construct it grows is one an agent has to
@@ -28,10 +27,6 @@ export type WidgetDef = {
   props: PropSpec[];
   // A list of template nodes, each expanding to zero or more primitive blocks.
   layout: Json[];
-  // False for the eight or so shipped with the service. An agent-authored widget
-  // is usable immediately but marked, so "which of these did we invent mid-task"
-  // is answerable without reading every definition.
-  builtin: boolean;
 };
 
 export type ExpandError = { widget: string; reason: string };

@@ -100,7 +100,7 @@ It reads the key and agent id you just saved, and signs every request with
 them. Nothing else to configure.
 
 Then start a new session and you have: list_widgets, create_brief,
-await_responses, read_responses, close_brief, get_artifact, define_widget.
+await_responses, read_responses, close_brief and get_artifact.
 
 4. Or drive it with curl
 ------------------------
@@ -154,8 +154,10 @@ A minimal brief.json:
 Things worth knowing
 --------------------
 
-* Widgets are data. If none of them fit, POST a new one to /api/widgets and use
-  it in the same turn — it needs no deploy.
+* The widget library is fixed. list_widgets is the whole vocabulary, and there
+  is no way to add to it from here — a new widget is a pull request against the
+  service. If none of them fit, a "raw" block renders your own HTML in a
+  sandboxed frame; needing that twice is the argument for the pull request.
 * Disagreement is reported, never resolved. If two people answer differently you
   get both, and the field is named in "conflicts". Deciding is your job.
 * intent.purpose is required. Answers that arrive with no record of what they

@@ -92,19 +92,30 @@ was named:
   `conflicts` covers choice, boolean, rating and number only. Whether the text
   differed is still recorded, just not flagged.
 
-## Extensibility: widgets are data
+## Extensibility: reviewed, not accumulated
 
-A new widget must never require a redeploy — otherwise agents cannot add one
-mid-task, and the escape hatch is shut exactly when it is needed. Three tiers:
+`REVISED 2026-08-20.` This section originally argued that a new widget must never
+require a redeploy, so an agent could add one mid-task. That was built, shipped,
+and then removed.
+
+Two things were wrong with it. The registry was global: an agent could define a
+widget every other agent then saw, and overwrite one another agent was using —
+the same isolation gap as briefs, missed in the same place and found the same
+way. And the argument was weaker than it looked. A shared vocabulary anyone can
+extend at runtime is not shared, it is accumulated, and nobody reviews an
+accumulation.
+
+Three tiers, with the middle one now reviewed:
 
 1. **Primitives** — compiled in. Curated and deliberately small.
-2. **Widgets** — compositions of primitives, stored as records. An agent broadens
-   the schema by writing a composition. No code execution, no deploy.
+2. **Widgets** — compositions of primitives, twelve of them, in
+   `src/domain/builtin-widgets.ts`. A thirteenth is a pull request.
 3. **Raw** — agent-authored HTML in a sandboxed iframe, for what tier 2 cannot
-   express. Marked unregistered. Promotable into tier 2 if it earns its place.
+   express. Needing it twice is the argument for the pull request.
 
-Most "we need a widget we don't have" lands in tier 2 and costs nothing. Tier 3
-staying rare and quarantined is what makes it safe to offer at all.
+What this costs is the mid-task escape hatch for a genuinely novel shape, and
+that cost is accepted. Tier 3 covers the case; it just does not add to anyone
+else's vocabulary while doing so.
 
 ## Identity
 
@@ -188,7 +199,7 @@ The REST API is built — see README.md for the routes. It is bearer-authenticat
 and is what the participant-facing app uses too.
 
 `OPEN` — an MCP server over the top, exposing `list_widgets`, `create_brief`,
-`await_responses`, `define_widget` as tools. That is the idiomatic agent-facing
+`await_responses` as tools. That is the idiomatic agent-facing
 surface and would remove the need for an agent to remember curl invocations. REST
 stays underneath either way, because an orchestrator resuming a session is not
 necessarily an agent.

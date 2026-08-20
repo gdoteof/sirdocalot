@@ -1,12 +1,12 @@
 // The shipped vocabulary: the shapes common enough that an agent should never
 // have to describe them again.
 //
-// These are ordinary widget definitions with `builtin: true` -- there is no
-// second mechanism. An agent reads them with list_widgets, and anything it needs
-// that is not here it defines the same way these are written.
+// This file IS the registry. An agent reads it through list_widgets and cannot
+// add to it; anything missing is a pull request against this list.
 //
-// Keeping this set small is the discipline. A widget earns a place by being asked
-// for repeatedly, not by being imaginable.
+// Keeping the set small is the discipline. A widget earns a place by being asked
+// for repeatedly, not by being imaginable -- and now that adding one is a review
+// rather than a POST, that bar is enforced by something other than good manners.
 
 import type { Json } from "./json.ts";
 import { widgetName } from "./ids.ts";
@@ -25,7 +25,7 @@ const define = (
   summary: string,
   props: WidgetDef["props"],
   layout: Json[],
-): WidgetDef => ({ name: named(name), summary, props, layout, builtin: true });
+): WidgetDef => ({ name: named(name), summary, props, layout });
 
 const req = (name: string, type: WidgetDef["props"][number]["type"], description: string) => ({
   name,
@@ -114,7 +114,14 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
     [req("title", "string", "Heading"), req("events", "array", "Events as {when,what}")],
     [
       { kind: "heading", level: 2, text: { $: "title" } },
-      { $each: "events", as: "event", body: [{ kind: "keyValue", entries: [{ key: { $: "event.when" }, value: { $: "event.what" } }] }] },
+      // $each inside the rows array, so the events become rows of ONE table.
+      // Emitting a keyValue block per event stacked a dozen little grids whose
+      // columns each sized themselves, and nothing lined up down the page.
+      {
+        kind: "table",
+        columns: ["When", "What"],
+        rows: [{ $each: "events", as: "event", body: [[{ $: "event.when" }, { $: "event.what" }]] }],
+      },
     ],
   ),
 
@@ -188,7 +195,15 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
   define(
     "pick-one",
     "A choice between options, with room to say why. For 'which of these should I do'.",
-    [req("title", "string", "Heading"), opt("context", "string", "Background"), req("options", "array", "Options as {value,label}"), opt("question", "string", "Question text")],
+    [
+      req("title", "string", "Heading"),
+      opt("context", "string", "Background"),
+      req("options", "array", "Options as {value,label}"),
+      // Required, because it is bound straight into a label the parser insists
+      // on. As an optional it resolved to null and refused the whole brief -- an
+      // optional prop that breaks rendering is not optional.
+      req("question", "string", "The question shown above the options"),
+    ],
     [
       { kind: "heading", level: 2, text: { $: "title" } },
       { $if: "context", then: [{ kind: "prose", text: { $: "context" } }] },

@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Hono } from "hono";
 import { STYLE } from "../render/style.ts";
+import { BUILTIN_WIDGETS } from "../../domain/builtin-widgets.ts";
 
 export function landing(baseUrl: string): Hono {
   const app = new Hono();
@@ -42,12 +43,16 @@ a { color: var(--accent); text-underline-offset: .15em; overflow-wrap: anywhere;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: .92em; overflow-wrap: anywhere;
 }
-.chips { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; padding: 0; margin: 0 0 1.25rem; }
-.chips li {
-  font: .78rem/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  color: var(--ink-soft); background: var(--surface);
-  border: 1px solid var(--line); border-radius: var(--radius); padding: .3rem .5rem;
+/* Two columns where there is room, so twelve entries read as a reference rather
+   than a wall. Names are monospace because that is how they are typed. */
+.widgets { margin: 0 0 1.25rem; display: grid; grid-template-columns: 1fr; gap: 0; }
+.widgets div { padding: .55rem 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.widgets dt {
+  font: .82rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--accent); margin: 0;
 }
+.widgets dd { margin: .15rem 0 0; color: var(--ink-soft); font-size: .9rem; }
+@media (min-width: 40rem) { .widgets { grid-template-columns: 1fr 1fr; column-gap: 1.75rem; } }
 .split { display: grid; gap: .5rem 1.75rem; grid-template-columns: 1fr; margin: 0 0 1.25rem; }
 .split > * { min-width: 0; }
 .split .h { margin-top: 0; }
@@ -66,6 +71,17 @@ a { color: var(--accent); text-underline-offset: .15em; overflow-wrap: anywhere;
 .mascot { width: 128px; height: auto; flex: none; }
 @media (max-width: 30rem) { .mascot { width: 84px; } .hero { gap: 1rem; } }
 `;
+
+const esc = (text: string): string =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// Rendered from BUILTIN_WIDGETS rather than written out, because a hand-kept copy
+// of the library is a copy that ends up describing widgets that no longer exist.
+function widgetList(): string {
+  return BUILTIN_WIDGETS.map(
+    (w) => `    <div><dt>${esc(w.name)}</dt><dd>${esc(w.summary)}</dd></div>\n`,
+  ).join("");
+}
 
 function page(baseUrl: string): string {
   return `<!doctype html>
@@ -148,13 +164,11 @@ function page(baseUrl: string): string {
   <pre class="code"><code>${baseUrl}/r/x7v43et5xetd</code></pre>
   <p class="prose">Behind it is a server-rendered page with a plain form. No account, no sign-in, no JavaScript, no Claude access, no need to know what an agent is. That is what makes it usable by the people who are not on your team: the customer, the lawyer, the person in finance who answers one question and never comes back.</p>
 
-  <h2 class="h">Twelve widgets, and room for the thirteenth</h2>
-  <ul class="chips">
-    <li>summary</li><li>key-facts</li><li>findings</li><li>comparison</li>
-    <li>decision-matrix</li><li>timeline</li><li>annotated-code</li><li>ask</li>
-    <li>survey</li><li>approval</li><li>pick-one</li><li>rate-items</li>
-  </ul>
-  <p class="prose">New widgets are data, not deploys. An agent that needs a shape nobody shipped POSTs a definition to <span class="mono">/api/widgets</span> and renders with it in the same turn. No release, no restart, no waiting for anyone.</p>
+  <h2 class="h">The widget library</h2>
+  <p class="prose">This is the whole vocabulary. An agent names one and passes props; it never describes a layout.</p>
+  <dl class="widgets">
+${widgetList()}  </dl>
+  <p class="prose">There is no thirteenth without a pull request. Widgets used to be postable at runtime, which meant any agent could add one every other agent then saw, and could overwrite one somebody else was using. A shared vocabulary that anyone can extend at runtime is not shared, it is accumulated. So the list above is a reviewed file in the repository, and the escape hatch for a shape nobody anticipated is a sandboxed <span class="mono">raw</span> block \u2014 needing it twice is the argument for a pull request.</p>
 
   <h3 class="h">Three tiers</h3>
   <div class="tier">

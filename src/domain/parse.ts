@@ -153,7 +153,13 @@ function parseBlock(v: Json, at: string, ctx: Ctx): PrimitiveBlock | undefined {
       return { kind: "prose", text: str(v, "text", at, ctx) };
     case "callout": {
       const toneRaw = str(v, "tone", at, ctx, "info");
-      const tone = (TONES.includes(toneRaw) ? toneRaw : "info") as Tone;
+      // Refused rather than defaulted. Silently recolouring an unknown tone to
+      // "info" renders a finding an agent called critical as a calm blue box --
+      // wrong in the direction that matters, and invisible to whoever wrote it.
+      if (!TONES.includes(toneRaw)) {
+        ctx.errors.push(`${at}.tone: expected one of ${TONES.join(", ")}, got "${toneRaw}"`);
+      }
+      const tone = toneRaw as Tone;
       const title = optStr(v, "title", at, ctx);
       return { kind: "callout", tone, text: str(v, "text", at, ctx), ...(title !== undefined ? { title } : {}) };
     }

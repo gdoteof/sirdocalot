@@ -15,9 +15,8 @@ import { briefId } from "../../domain/ids.ts";
 import { fieldsOf } from "../../domain/primitives.ts";
 import type { Coalesced } from "../../domain/response.ts";
 import { createBrief } from "../../application/create-brief.ts";
-import { defineWidget } from "../../application/define-widget.ts";
 import { closeManually, readResults } from "../../application/read-results.ts";
-import { createBriefSchema, defineWidgetSchema } from "./schemas.ts";
+import { createBriefSchema } from "./schemas.ts";
 
 type Env = { Variables: { actor: Actor } };
 
@@ -171,36 +170,8 @@ export function agentApi(deps: Deps, renderers: { artifact: Renderer }, config: 
   app.get("/widgets", async (c) => {
     const widgets = await deps.widgets.list();
     return c.json({
-      widgets: widgets.map((w) => ({
-        name: w.name,
-        summary: w.summary,
-        builtin: w.builtin,
-        props: w.props,
-      })),
+      widgets: widgets.map((w) => ({ name: w.name, summary: w.summary, props: w.props })),
     });
-  });
-
-  app.post("/widgets", async (c) => {
-    const parsed = defineWidgetSchema.safeParse(await readJson(c));
-    if (!parsed.success) return c.json({ error: "bad request", details: parsed.error.issues }, 400);
-
-    // zod hands back `T | undefined` for every optional; the domain types say the
-    // key is absent. Dropping the undefined keys is this boundary's job, and it
-    // is why the mapping is written out rather than spread.
-    const result = await defineWidget(deps, {
-      name: parsed.data.name,
-      summary: parsed.data.summary,
-      props: parsed.data.props.map((p) => ({
-        name: p.name,
-        type: p.type,
-        ...(p.required !== undefined ? { required: p.required } : {}),
-        ...(p.description !== undefined ? { description: p.description } : {}),
-      })),
-      layout: parsed.data.layout as Json[],
-      example: parsed.data.example as Record<string, Json>,
-    });
-    if (!result.ok) return c.json({ error: "invalid widget", details: result.errors }, 400);
-    return c.json({ widget: { name: result.value.name, summary: result.value.summary } }, 201);
   });
 
   app.post("/briefs", async (c) => {

@@ -23,10 +23,11 @@ export type BriefStore = {
   responsesOf(id: BriefId): Promise<Response[]>;
 };
 
+// Read-only. Widgets are a reviewed change to the shipped set, so there is no
+// write path to declare here.
 export type WidgetStore = {
   get(name: WidgetName): Promise<WidgetDef | undefined>;
   list(): Promise<WidgetDef[]>;
-  define(def: WidgetDef): Promise<void>;
 };
 
 export type Clock = { now(): Date };

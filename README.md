@@ -85,8 +85,7 @@ Signatures are good for five minutes and each nonce is accepted once.
 
 | | |
 |---|---|
-| `GET /api/widgets` | What can be emitted without inventing anything. Read this first. |
-| `POST /api/widgets` | Define a new widget. No deploy required. |
+| `GET /api/widgets` | The whole vocabulary. Read this first; it is also the only widget route. |
 | `POST /api/briefs` | Create a brief. Returns a handle and one link per participant. |
 | `GET /api/briefs/:id` | Status and coalesced answers. |
 | `GET /api/briefs/:id/await?timeout_ms=` | Long poll until collection closes. |
@@ -140,9 +139,11 @@ Three tiers, and which tier a thing lives in is the whole design:
 1. **Primitives** — compiled in. `heading`, `prose`, `callout`, `list`,
    `keyValue`, `table`, `code`, `divider`, `field`, `raw`. Small, and grows
    slowly, because this is the tier that costs a deploy.
-2. **Widgets** — compositions of primitives stored as rows. Twelve ship with the
-   service. An agent that needs a thirteenth `POST`s one and uses it in the same
-   turn.
+2. **Widgets** — compositions of primitives, twelve of them, defined in
+   `src/domain/builtin-widgets.ts`. A thirteenth is a pull request. They were
+   postable at runtime once; any agent could then add a widget every other agent
+   saw, and overwrite one somebody else was using. A vocabulary anyone can extend
+   at runtime is not shared, it is accumulated.
 3. **`raw`** — agent-authored HTML in a sandboxed iframe, for what tier 2 cannot
    express. No scripts, no same-origin, no forms.
 
@@ -155,9 +156,8 @@ language is three constructs and will stay three:
 | `{"$each": "path", "as": "item", "body": [...]}` | repeat the body per element |
 | `{"$if": "path", "then": [...], "else": [...]}` | include a branch |
 
-Defining a widget requires an `example` that renders. A definition nobody has
-expanded is a definition nobody has shown to work, and the first agent to reach
-for it finds out mid-task.
+Every widget is exercised by the test suite before it ships, which is the review
+that used to be impossible when definitions arrived over HTTP.
 
 ## Layout
 

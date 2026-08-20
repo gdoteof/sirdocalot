@@ -13,8 +13,8 @@ import { memoryNonces } from "./adapters/crypto/nonces.ts";
 import { connect, migrate } from "./adapters/postgres/pool.ts";
 import { briefStore } from "./adapters/postgres/brief-store.ts";
 import { agentStore, inviteCodes } from "./adapters/postgres/agent-store.ts";
+import { builtinWidgets } from "./adapters/registry/widgets.ts";
 import { linkStore } from "./adapters/postgres/link-store.ts";
-import { seedBuiltins, widgetStore } from "./adapters/postgres/widget-store.ts";
 import { loggingNotifier, webhookNotifier } from "./adapters/notify/webhook.ts";
 import { artifactRenderer } from "./adapters/render/artifact.ts";
 import { hostedRenderer } from "./adapters/render/hosted.ts";
@@ -29,8 +29,7 @@ const db = connect(config.databaseUrl, config.databaseSchema);
 const ran = await migrate(db, config.databaseSchema);
 if (ran.length > 0) console.log(JSON.stringify({ event: "migrated", schema: config.databaseSchema, files: ran }));
 
-const widgets = widgetStore(db);
-const seeded = await seedBuiltins(widgets);
+const widgets = builtinWidgets();
 
 const deps: Deps = {
   briefs: briefStore(db),
@@ -80,9 +79,7 @@ app.route("/", onboarding(config.baseUrl));
 app.route("/", participantApp(deps, hostedRenderer()));
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
-  console.log(
-    JSON.stringify({ event: "listening", port: info.port, baseUrl: config.baseUrl, builtinWidgets: seeded }),
-  );
+  console.log(JSON.stringify({ event: "listening", port: info.port, baseUrl: config.baseUrl }));
 });
 
 // k8s sends SIGTERM and waits. Draining in-flight requests matters more here than

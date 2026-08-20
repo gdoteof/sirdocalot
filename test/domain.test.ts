@@ -14,6 +14,8 @@ import { coalesce } from "../src/domain/response.ts";
 import { canonicalRequest, checkFreshness, ownsBrief } from "../src/domain/agent.ts";
 import { agentId } from "../src/domain/ids.ts";
 import { ALPHABET, encode } from "../src/domain/shortid.ts";
+import { BUILTIN_WIDGETS } from "../src/domain/builtin-widgets.ts";
+import type { Json } from "../src/domain/json.ts";
 
 const fid = (s: string): FieldId => {
   const parsed = fieldId(s);
@@ -74,7 +76,7 @@ describe("widget expansion", () => {
   const def = (layout: WidgetDef["layout"], props: WidgetDef["props"] = []): WidgetDef => {
     const name = widgetName("probe");
     if (!name.ok) throw new Error(name.reason);
-    return { name: name.value, summary: "probe", props, layout, builtin: false };
+    return { name: name.value, summary: "probe", props, layout };
   };
 
   it("substitutes a whole array through one binding", () => {
@@ -316,5 +318,72 @@ describe("short ids", () => {
     strictEqual([...encoded].every((ch) => ALPHABET.includes(ch)), true);
     // The characters people transcribe wrongly are absent by construction.
     strictEqual(/[01ilou]/.test(encoded), false);
+  });
+});
+
+describe("every shipped widget renders", () => {
+  // Props that must make each widget expand into valid blocks. This is the
+  // review that used to be impossible when definitions arrived over HTTP: a
+  // widget cannot reach the library without a set of props somebody wrote down
+  // and a test that expands them.
+  const EXAMPLES: Record<string, Record<string, Json>> = {
+    summary: { title: "T", lead: "L", points: ["a", "b"] },
+    "key-facts": { title: "T", facts: [{ key: "k", value: "v" }] },
+    findings: { title: "T", findings: [{ tone: "warn", title: "t", detail: "d" }] },
+    comparison: { title: "T", columns: ["a", "b"], rows: [["1", "2"]] },
+    "decision-matrix": { title: "T", columns: ["a"], rows: [["1"]], recommendation: "r" },
+    timeline: { title: "T", events: [{ when: "09:00", what: "started" }, { when: "10:00", what: "done" }] },
+    "annotated-code": { title: "T", notes: [{ note: "n", code: "x = 1", language: "python" }] },
+    ask: { title: "T", field: { kind: "text", id: "q", label: "Q", required: false } },
+    survey: { title: "T", questions: [{ kind: "text", id: "q", label: "Q", required: false }] },
+    approval: { title: "T", proposal: "p" },
+    "pick-one": { title: "T", question: "Which?", options: [{ value: "a", label: "A" }] },
+    "rate-items": { title: "T", items: [{ id: "a", label: "A" }], scale: 5 },
+  };
+
+  it("has an example for every widget, and none for a widget that is gone", () => {
+    deepStrictEqual(Object.keys(EXAMPLES).sort(), BUILTIN_WIDGETS.map((w) => w.name).sort());
+  });
+
+  for (const widget of BUILTIN_WIDGETS) {
+    it(`${widget.name} expands to valid blocks`, () => {
+      const props = EXAMPLES[widget.name] ?? {};
+      deepStrictEqual(validateProps(widget, props), []);
+      const parsed = parseBlocks(expand(widget, props));
+      if (!parsed.ok) throw new Error(`${widget.name}: ${parsed.errors.join("; ")}`);
+      strictEqual(parsed.value.length > 0, true);
+    });
+  }
+
+  it("omitting an optional prop still renders", () => {
+    // The failure this catches: a prop declared optional but bound into a
+    // required field, so leaving it out refuses the whole brief.
+    const optionalsDropped: Record<string, Record<string, Json>> = {
+      "annotated-code": { title: "T", notes: [{ note: "n", code: "x = 1" }] },
+      comparison: { title: "T", columns: ["a"], rows: [["1"]] },
+      "decision-matrix": { title: "T", columns: ["a"], rows: [["1"]] },
+      ask: { title: "T", field: { kind: "text", id: "q", label: "Q", required: false } },
+      survey: { title: "T", questions: [{ kind: "text", id: "q", label: "Q", required: false }] },
+      approval: { title: "T", proposal: "p" },
+      "pick-one": { title: "T", question: "Which?", options: [{ value: "a", label: "A" }] },
+      "rate-items": { title: "T", items: [{ id: "a", label: "A" }] },
+      summary: { title: "T", lead: "L" },
+    };
+    for (const [name, props] of Object.entries(optionalsDropped)) {
+      const widget = BUILTIN_WIDGETS.find((w) => w.name === name);
+      if (widget === undefined) throw new Error(`no such widget: ${name}`);
+      const parsed = parseBlocks(expand(widget, props));
+      if (!parsed.ok) throw new Error(`${name} without its optionals: ${parsed.errors.join("; ")}`);
+    }
+  });
+
+  it("puts every timeline event in one table rather than a grid each", () => {
+    const timeline = BUILTIN_WIDGETS.find((w) => w.name === "timeline");
+    if (timeline === undefined) throw new Error("no timeline widget");
+    const parsed = parseBlocks(expand(timeline, EXAMPLES["timeline"] ?? {}));
+    if (!parsed.ok) throw new Error(parsed.errors.join("; "));
+    const tables = parsed.value.filter((b) => b.kind === "table");
+    strictEqual(tables.length, 1);
+    strictEqual(tables[0]?.kind === "table" ? tables[0].rows.length : 0, 2);
   });
 });
