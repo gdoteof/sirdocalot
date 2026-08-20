@@ -8,10 +8,9 @@ export type Config = {
   port: number;
   databaseUrl: string;
   databaseSchema: string;
-  agentKey: string;
-  tokenSecret: string;
+  adminKey: string;
   baseUrl: string;
-  tokenTtlSeconds: number;
+  linkTtlSeconds: number;
   maxAwaitMs: number;
   pollIntervalMs: number;
   notifyWebhook?: string;
@@ -42,14 +41,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     // so is the schema inside it -- reusing the Postgres instance is a cost
     // decision about a development cluster, not a decision to mingle tables.
     databaseSchema: env["DATABASE_SCHEMA"] ?? "sirdocalot",
-    agentKey: required(env, "AGENT_KEY", missing),
-    tokenSecret: required(env, "TOKEN_SECRET", missing),
+    // The operator's key. Agents authenticate with their own keypairs and never
+    // hold this one -- it mints invite codes and disables agents.
+    adminKey: required(env, "AGENT_KEY", missing),
     // Where participants reach this service. Deliberately configuration and not
     // something a brief remembers: the same brief served from a different host
     // is still the same brief, which is what keeps "move this somewhere shared"
     // a config change rather than a migration.
     baseUrl: (env["BASE_URL"] ?? `http://localhost:${number(env, "PORT", 8080)}`).replace(/\/+$/, ""),
-    tokenTtlSeconds: number(env, "TOKEN_TTL_HOURS", 24 * 14) * 3600,
+    linkTtlSeconds: number(env, "LINK_TTL_HOURS", 24 * 14) * 3600,
     maxAwaitMs: number(env, "MAX_AWAIT_MS", 5 * 60 * 1000),
     pollIntervalMs: number(env, "POLL_INTERVAL_MS", 2000),
     ...(env["NOTIFY_WEBHOOK"] !== undefined && env["NOTIFY_WEBHOOK"] !== ""

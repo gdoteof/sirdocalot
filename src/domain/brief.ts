@@ -1,6 +1,6 @@
 // The document an agent emits, and everything needed to act on what comes back.
 
-import type { BriefId, ParticipantId } from "./ids.ts";
+import type { AgentId, BriefId, ParticipantId } from "./ids.ts";
 import type { PrimitiveBlock } from "./primitives.ts";
 import type { CloseReason, CollectionPolicy } from "./policy.ts";
 
@@ -23,6 +23,10 @@ export type Participant = {
 
 export type Brief = {
   id: BriefId;
+  // Which agent created it. Absent only on briefs made before agents existed,
+  // which is why it is optional rather than required -- and why ownsBrief() in
+  // agent.ts treats an absent owner as owned by nobody but admin.
+  agentId?: AgentId;
   title: string;
   blocks: PrimitiveBlock[];
   participants: Participant[];

@@ -5,7 +5,11 @@
 // derive it. Tokens spent on the reply are tokens the calling agent pays.
 
 import { Hono } from "hono";
+import type { Actor } from "../../domain/agent.ts";
 import type { Deps, Renderer } from "../../application/ports.ts";
+import { authenticate } from "../../application/authenticate.ts";
+import { registerAgent } from "../../application/register-agent.ts";
+import { registerAgentSchema, inviteSchema } from "./schemas.ts";
 import type { Json } from "../../domain/json.ts";
 import { briefId } from "../../domain/ids.ts";
 import { fieldsOf } from "../../domain/primitives.ts";
@@ -15,26 +19,153 @@ import { defineWidget } from "../../application/define-widget.ts";
 import { closeManually, readResults } from "../../application/read-results.ts";
 import { createBriefSchema, defineWidgetSchema } from "./schemas.ts";
 
+type Env = { Variables: { actor: Actor } };
+
 export type AgentApiConfig = {
-  agentKey: string;
+  // The operator's own key. It is not an agent: it mints invite codes and
+  // disables agents, which is exactly the authority an agent must not have.
+  adminKey: string;
   // Where participants reach this service. Deployment configuration, never stored
   // on a brief -- see docs/DESIGN.md on why the host is not part of an identity.
   baseUrl: string;
   maxAwaitMs: number;
   pollIntervalMs: number;
+  linkTtlSeconds: number;
 };
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-export function agentApi(deps: Deps, renderers: { artifact: Renderer }, config: AgentApiConfig): Hono {
-  const app = new Hono();
+// A request body can be read once. The auth middleware has to read it to verify
+// the signature covers it, so handlers take it from here rather than from the
+// stream. Keyed by the Request object and weak, so entries vanish with it.
+const bodies = new WeakMap<Request, string>();
+
+async function readJson(c: { req: { raw: Request; text(): Promise<string> } }): Promise<unknown> {
+  const cached = bodies.get(c.req.raw);
+  const text = cached ?? (await c.req.text());
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function pathWithQuery(url: string): string {
+  const parsed = new URL(url);
+  return `${parsed.pathname}${parsed.search}`;
+}
+
+// Constant time, so a wrong admin key cannot be narrowed by how long the compare
+// took. Length is compared first because the loop below needs equal lengths.
+function timingEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+function pasteLine(baseUrl: string, code: string): string {
+  return `Set yourself up on sirdocalot: read ${baseUrl}/start and follow it. My invite code is ${code}`;
+}
+
+export function agentApi(deps: Deps, renderers: { artifact: Renderer }, config: AgentApiConfig): Hono<Env> {
+  const app = new Hono<Env>();
 
   app.use("*", async (c, next) => {
+    // Registration is the one route that cannot be authenticated: it is where an
+    // agent gets the identity everything else requires. Its gate is the invite
+    // code, checked in the use case.
+    if (c.req.method === "POST" && c.req.path === "/api/agents") {
+      await next();
+      return;
+    }
+
     const header = c.req.header("authorization") ?? "";
     const presented = header.startsWith("Bearer ") ? header.slice(7) : "";
-    if (presented !== config.agentKey) return c.json({ error: "unauthorized" }, 401);
+    if (presented !== "" && timingEqual(presented, config.adminKey)) {
+      c.set("actor", { kind: "admin" });
+      await next();
+      return;
+    }
+
+    const agent = c.req.header("x-sdl-agent");
+    if (agent === undefined) {
+      return c.json({ error: "unauthorized", hint: `sign your request — see ${config.baseUrl}/start` }, 401);
+    }
+
+    // The body is read here and handed to the handlers, because reading it twice
+    // is not possible and the signature covers the exact bytes that arrived.
+    const body = await c.req.text();
+    const outcome = await authenticate(deps, {
+      method: c.req.method,
+      pathWithQuery: pathWithQuery(c.req.url),
+      body,
+      agent,
+      timestamp: c.req.header("x-sdl-timestamp") ?? "",
+      nonce: c.req.header("x-sdl-nonce") ?? "",
+      signature: c.req.header("x-sdl-signature") ?? "",
+    });
+    if (!outcome.ok) return c.json({ error: "unauthorized", reason: outcome.reason }, 401);
+
+    c.set("actor", outcome.actor);
+    bodies.set(c.req.raw, body);
     await next();
     return;
+  });
+
+  // ------------------------------------------------------------ registration --
+  app.post("/agents", async (c) => {
+    const parsed = registerAgentSchema.safeParse(await readJson(c));
+    if (!parsed.success) return c.json({ error: "bad request", details: parsed.error.issues }, 400);
+
+    const result = await registerAgent(deps, parsed.data);
+    if (!result.ok) return c.json({ error: "registration refused", details: result.errors }, 400);
+
+    return c.json(
+      {
+        agentId: result.value.id,
+        name: result.value.name,
+        // Said plainly because it is the one thing a caller must not expect us to
+        // do for them: we hold no private key and cannot recover one.
+        note: "Keep your private key. This service never receives it and cannot reissue it.",
+      },
+      201,
+    );
+  });
+
+  // ------------------------------------------------------------------- admin --
+  app.post("/invites", async (c) => {
+    if (c.get("actor").kind !== "admin") return c.json({ error: "forbidden" }, 403);
+    const parsed = inviteSchema.safeParse(await readJson(c));
+    if (!parsed.success) return c.json({ error: "bad request", details: parsed.error.issues }, 400);
+
+    const code = `${deps.ids.fresh(4)}-${deps.ids.fresh(4)}-${deps.ids.fresh(4)}`;
+    await deps.invites.create(code, parsed.data.note);
+    return c.json({ code, paste: pasteLine(config.baseUrl, code) }, 201);
+  });
+
+  app.get("/invites", async (c) => {
+    if (c.get("actor").kind !== "admin") return c.json({ error: "forbidden" }, 403);
+    return c.json({ invites: await deps.invites.list() });
+  });
+
+  app.get("/agents", async (c) => {
+    if (c.get("actor").kind !== "admin") return c.json({ error: "forbidden" }, 403);
+    const agents = await deps.agents.list();
+    return c.json({
+      agents: agents.map((a) => ({
+        id: a.id,
+        name: a.name,
+        createdAt: a.createdAt,
+        disabled: a.disabledAt !== undefined,
+      })),
+    });
+  });
+
+  app.post("/agents/:id/disable", async (c) => {
+    if (c.get("actor").kind !== "admin") return c.json({ error: "forbidden" }, 403);
+    await deps.agents.disable(c.req.param("id") as never, deps.clock.now().toISOString());
+    return c.json({ disabled: c.req.param("id") });
   });
 
   app.get("/widgets", async (c) => {
@@ -50,7 +181,7 @@ export function agentApi(deps: Deps, renderers: { artifact: Renderer }, config: 
   });
 
   app.post("/widgets", async (c) => {
-    const parsed = defineWidgetSchema.safeParse(await c.req.json().catch(() => null));
+    const parsed = defineWidgetSchema.safeParse(await readJson(c));
     if (!parsed.success) return c.json({ error: "bad request", details: parsed.error.issues }, 400);
 
     // zod hands back `T | undefined` for every optional; the domain types say the
@@ -73,11 +204,12 @@ export function agentApi(deps: Deps, renderers: { artifact: Renderer }, config: 
   });
 
   app.post("/briefs", async (c) => {
-    const parsed = createBriefSchema.safeParse(await c.req.json().catch(() => null));
+    const parsed = createBriefSchema.safeParse(await readJson(c));
     if (!parsed.success) return c.json({ error: "bad request", details: parsed.error.issues }, 400);
 
-    const result = await createBrief(deps, {
+    const result = await createBrief(deps, c.get("actor"), {
       title: parsed.data.title,
+      linkTtlSeconds: config.linkTtlSeconds,
       blocks: parsed.data.blocks as Json[],
       participants: parsed.data.participants.map((p) => ({
         name: p.name,
@@ -119,7 +251,7 @@ export function agentApi(deps: Deps, renderers: { artifact: Renderer }, config: 
   app.get("/briefs/:id", async (c) => {
     const id = briefId(c.req.param("id"));
     if (!id.ok) return c.json({ error: "not found" }, 404);
-    const results = await readResults(deps, id.value);
+    const results = await readResults(deps, c.get("actor"), id.value);
     if (results === undefined) return c.json({ error: "not found" }, 404);
     return c.json(present(results.brief, results.closed, results.results));
   });
@@ -136,7 +268,7 @@ export function agentApi(deps: Deps, renderers: { artifact: Renderer }, config: 
     const deadline = Date.now() + budget;
 
     for (;;) {
-      const results = await readResults(deps, id.value);
+      const results = await readResults(deps, c.get("actor"), id.value);
       if (results === undefined) return c.json({ error: "not found" }, 404);
       if (results.closed) return c.json(present(results.brief, true, results.results));
       if (Date.now() >= deadline) {
@@ -151,7 +283,7 @@ export function agentApi(deps: Deps, renderers: { artifact: Renderer }, config: 
   app.post("/briefs/:id/close", async (c) => {
     const id = briefId(c.req.param("id"));
     if (!id.ok) return c.json({ error: "not found" }, 404);
-    const results = await closeManually(deps, id.value);
+    const results = await closeManually(deps, c.get("actor"), id.value);
     if (results === undefined) return c.json({ error: "not found" }, 404);
     return c.json(present(results.brief, results.closed, results.results));
   });
@@ -159,7 +291,7 @@ export function agentApi(deps: Deps, renderers: { artifact: Renderer }, config: 
   app.get("/briefs/:id/artifact", async (c) => {
     const id = briefId(c.req.param("id"));
     if (!id.ok) return c.json({ error: "not found" }, 404);
-    const results = await readResults(deps, id.value);
+    const results = await readResults(deps, c.get("actor"), id.value);
     if (results === undefined) return c.json({ error: "not found" }, 404);
     const html = renderers.artifact.render({
       brief: results.brief,

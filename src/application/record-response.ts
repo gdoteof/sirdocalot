@@ -19,7 +19,7 @@ export async function recordResponse(
   token: string,
   answers: Record<string, Answer>,
 ): Promise<RecordOutcome> {
-  const claim = deps.tokens.verify(token);
+  const claim = await deps.links.resolve(token, deps.clock.now());
   if (claim === undefined) return { ok: false, kind: "rejected", reason: "This link is not valid, or it has expired." };
 
   const brief = await deps.briefs.get(claim.briefId);

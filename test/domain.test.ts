@@ -11,6 +11,9 @@ import { widgetName } from "../src/domain/ids.ts";
 import { parseBlocks } from "../src/domain/parse.ts";
 import { evaluateClosure } from "../src/domain/policy.ts";
 import { coalesce } from "../src/domain/response.ts";
+import { canonicalRequest, checkFreshness, ownsBrief } from "../src/domain/agent.ts";
+import { agentId } from "../src/domain/ids.ts";
+import { ALPHABET, encode } from "../src/domain/shortid.ts";
 
 const fid = (s: string): FieldId => {
   const parsed = fieldId(s);
@@ -257,5 +260,61 @@ describe("what counts as a disagreement", () => {
       { participantId: pid("sam"), submittedAt: "2026-08-20T10:01:00Z", answers: { decision: "no", reasoning: "no" } },
     ];
     deepStrictEqual(coalesce([pick, prose], invited, split).conflicts, ["decision"]);
+  });
+});
+
+describe("agent identity", () => {
+  it("signs over every part that would otherwise be swappable", () => {
+    const base = canonicalRequest("post", "/api/briefs", 1000, "abc");
+    // Each of these differs from the base, which is the property the signature
+    // relies on: change any component and the signature no longer matches.
+    strictEqual(canonicalRequest("GET", "/api/briefs", 1000, "abc") === base, false);
+    strictEqual(canonicalRequest("POST", "/api/briefs/x", 1000, "abc") === base, false);
+    strictEqual(canonicalRequest("POST", "/api/briefs", 1001, "abc") === base, false);
+    strictEqual(canonicalRequest("POST", "/api/briefs", 1000, "abd") === base, false);
+  });
+
+  it("normalises the method so case is not a second signature", () => {
+    strictEqual(canonicalRequest("post", "/x", 1, "d"), canonicalRequest("POST", "/x", 1, "d"));
+  });
+
+  it("refuses a stamp that is too old and one that is too far ahead", () => {
+    const now = new Date("2026-08-20T12:00:00Z");
+    const unix = Math.floor(now.getTime() / 1000);
+    strictEqual(checkFreshness(unix, now).fresh, true);
+    strictEqual(checkFreshness(unix - 299, now).fresh, true);
+    strictEqual(checkFreshness(unix - 301, now).fresh, false);
+    strictEqual(checkFreshness(unix + 301, now).fresh, false);
+  });
+});
+
+describe("brief ownership", () => {
+  const a = agentId("aaaa");
+  const b = agentId("bbbb");
+  if (!a.ok || !b.ok) throw new Error("fixture ids");
+
+  it("lets an agent see only its own", () => {
+    strictEqual(ownsBrief({ kind: "agent", agentId: a.value }, a.value), true);
+    strictEqual(ownsBrief({ kind: "agent", agentId: a.value }, b.value), false);
+  });
+
+  it("does not hand an ownerless brief to an agent", () => {
+    strictEqual(ownsBrief({ kind: "agent", agentId: a.value }, undefined), false);
+  });
+
+  it("lets admin see everything, owned or not", () => {
+    strictEqual(ownsBrief({ kind: "admin" }, b.value), true);
+    strictEqual(ownsBrief({ kind: "admin" }, undefined), true);
+  });
+});
+
+describe("short ids", () => {
+  it("draws only from the unambiguous alphabet", () => {
+    const bytes = new Uint8Array(Array.from({ length: 64 }, (_, i) => i * 7));
+    const encoded = encode(bytes, 32);
+    strictEqual(encoded.length, 32);
+    strictEqual([...encoded].every((ch) => ALPHABET.includes(ch)), true);
+    // The characters people transcribe wrongly are absent by construction.
+    strictEqual(/[01ilou]/.test(encoded), false);
   });
 });

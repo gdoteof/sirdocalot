@@ -8,15 +8,19 @@ import { Hono } from "hono";
 import { loadConfig } from "./config.ts";
 import type { Deps } from "./application/ports.ts";
 import { randomIds, systemClock } from "./adapters/clock.ts";
-import { hmacTokens } from "./adapters/tokens/hmac.ts";
+import { ed25519 } from "./adapters/crypto/ed25519.ts";
+import { memoryNonces } from "./adapters/crypto/nonces.ts";
 import { connect, migrate } from "./adapters/postgres/pool.ts";
 import { briefStore } from "./adapters/postgres/brief-store.ts";
+import { agentStore, inviteCodes } from "./adapters/postgres/agent-store.ts";
+import { linkStore } from "./adapters/postgres/link-store.ts";
 import { seedBuiltins, widgetStore } from "./adapters/postgres/widget-store.ts";
 import { loggingNotifier, webhookNotifier } from "./adapters/notify/webhook.ts";
 import { artifactRenderer } from "./adapters/render/artifact.ts";
 import { hostedRenderer } from "./adapters/render/hosted.ts";
 import { agentApi } from "./adapters/http/agent-api.ts";
 import { participantApp } from "./adapters/http/participant-app.ts";
+import { onboarding } from "./adapters/http/onboarding.ts";
 
 const config = loadConfig();
 const db = connect(config.databaseUrl, config.databaseSchema);
@@ -30,9 +34,13 @@ const seeded = await seedBuiltins(widgets);
 const deps: Deps = {
   briefs: briefStore(db),
   widgets,
+  agents: agentStore(db),
+  invites: inviteCodes(db),
+  links: linkStore(db, randomIds),
   clock: systemClock,
   ids: randomIds,
-  tokens: hmacTokens(config.tokenSecret, config.tokenTtlSeconds, () => systemClock.now()),
+  signatures: ed25519(),
+  nonces: memoryNonces(),
   notifier:
     config.notifyWebhook !== undefined
       ? webhookNotifier(config.notifyWebhook, loggingNotifier())
@@ -58,13 +66,15 @@ app.route(
     deps,
     { artifact: artifactRenderer() },
     {
-      agentKey: config.agentKey,
+      adminKey: config.adminKey,
       baseUrl: config.baseUrl,
       maxAwaitMs: config.maxAwaitMs,
       pollIntervalMs: config.pollIntervalMs,
+      linkTtlSeconds: config.linkTtlSeconds,
     },
   ),
 );
+app.route("/", onboarding(config.baseUrl));
 app.route("/", participantApp(deps, hostedRenderer()));
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {

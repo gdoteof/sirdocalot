@@ -6,6 +6,7 @@ declare const brand: unique symbol;
 type Branded<T, B> = T & { readonly [brand]: B };
 
 export type BriefId = Branded<string, "BriefId">;
+export type AgentId = Branded<string, "AgentId">;
 export type ParticipantId = Branded<string, "ParticipantId">;
 export type WidgetName = Branded<string, "WidgetName">;
 export type FieldId = Branded<string, "FieldId">;
@@ -18,6 +19,10 @@ import { ok, no } from "./result.ts";
 // Slug shape is shared by every identifier here. It is URL-safe by construction,
 // which is what lets an id appear in a participant link without escaping.
 const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+export function agentId(raw: string): Parsed<AgentId> {
+  return SLUG.test(raw) ? ok(raw as AgentId) : no(`not a valid agent id: ${raw}`);
+}
 
 export function briefId(raw: string): Parsed<BriefId> {
   return SLUG.test(raw) ? ok(raw as BriefId) : no(`not a valid brief id: ${raw}`);

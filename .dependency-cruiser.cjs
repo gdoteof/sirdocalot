@@ -10,7 +10,7 @@
 // directory the tree has not got is inert: it can never fire, so it has never
 // been shown to fire, and it makes this file claim a structure the tree lacks.
 
-const adapterDirs = ["http", "postgres", "render", "tokens", "notify"];
+const adapterDirs = ["http", "postgres", "render", "crypto", "notify"];
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {

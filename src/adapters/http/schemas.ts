@@ -45,3 +45,13 @@ export const defineWidgetSchema = z.object({
 
 export type CreateBriefBody = z.infer<typeof createBriefSchema>;
 export type DefineWidgetBody = z.infer<typeof defineWidgetSchema>;
+
+export const registerAgentSchema = z.object({
+  name: z.string().min(1).max(80),
+  publicKey: z.string().min(1),
+  inviteCode: z.string().min(1),
+});
+
+export const inviteSchema = z.object({
+  note: z.string().max(200).optional(),
+});

@@ -26,7 +26,6 @@
 #
 #   kubectl create secret generic sirdocalot -n sirdocalot \
 #     --from-literal=agent-key=$(openssl rand -hex 24) \
-#     --from-literal=token-secret=$(openssl rand -hex 32) \
 #     --from-literal=database-url='postgres://sirdocalot:<pw>@postgres.chuggy.svc.cluster.local:5432/sirdocalot'
 #
 # THE NAMESPACE IS NOT DECLARED HERE, deliberately. It is created by
@@ -80,10 +79,10 @@ spec:
               value: sirdocalot
             - name: DATABASE_URL
               valueFrom: { secretKeyRef: { name: sirdocalot, key: database-url } }
+            # The operator's key, not an agent's. Agents authenticate with
+            # keypairs they generate; this mints invite codes and disables them.
             - name: AGENT_KEY
               valueFrom: { secretKeyRef: { name: sirdocalot, key: agent-key } }
-            - name: TOKEN_SECRET
-              valueFrom: { secretKeyRef: { name: sirdocalot, key: token-secret } }
           # Readiness is database-aware; liveness is not. A pod that cannot reach
           # Postgres should leave the load balancer, not be restarted -- restarting
           # it fixes nothing and destroys every long poll it was holding.

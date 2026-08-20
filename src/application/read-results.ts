@@ -1,3 +1,5 @@
+import type { Actor } from "../domain/agent.ts";
+import { ownsBrief } from "../domain/agent.ts";
 import type { BriefId } from "../domain/ids.ts";
 import { invitedIds, isClosed } from "../domain/brief.ts";
 import { fieldsOf } from "../domain/primitives.ts";
@@ -12,9 +14,13 @@ export type Results = { brief: Brief; closed: boolean; results: Coalesced };
 // the moment it passes. So closure is re-evaluated on read, and a brief found
 // past its deadline is closed here. That makes reads the trigger, which is fine
 // because reads are exactly what is waiting on the answer.
-export async function readResults(deps: Deps, id: BriefId): Promise<Results | undefined> {
+export async function readResults(deps: Deps, actor: Actor, id: BriefId): Promise<Results | undefined> {
   const brief = await deps.briefs.get(id);
   if (brief === undefined) return undefined;
+  // Undefined rather than a distinct refusal: an agent asking after someone
+  // else's brief learns only that it does not have one by that id, which is all
+  // it is entitled to know.
+  if (!ownsBrief(actor, brief.agentId)) return undefined;
 
   const responses = await deps.briefs.responsesOf(id);
   const results = coalesce(fieldsOf(brief.blocks), invitedIds(brief), responses);
@@ -31,14 +37,15 @@ export async function readResults(deps: Deps, id: BriefId): Promise<Results | un
   return { brief: closedBrief, closed: true, results };
 }
 
-export async function closeManually(deps: Deps, id: BriefId): Promise<Results | undefined> {
+export async function closeManually(deps: Deps, actor: Actor, id: BriefId): Promise<Results | undefined> {
   const brief = await deps.briefs.get(id);
   if (brief === undefined) return undefined;
+  if (!ownsBrief(actor, brief.agentId)) return undefined;
 
   if (!isClosed(brief)) {
     const at = deps.clock.now().toISOString();
     await deps.briefs.close(id, at, "closed-manually");
     await deps.notifier.collectionClosed({ ...brief, closedAt: at, closedReason: "closed-manually" }, "closed-manually");
   }
-  return readResults(deps, id);
+  return readResults(deps, actor, id);
 }

@@ -40,9 +40,43 @@ just reset     # stop and wipe the database
 development values on purpose: a local stack that needs a secrets ceremony before
 it runs is one people stop running.
 
+## Getting an agent onto it
+
+One line, plus an invite code:
+
+> Set yourself up on sirdocalot: read https://sirdocalot.vteng.io/start and
+> follow it. My invite code is `xxxx-xxxx-xxxx`.
+
+`/start` walks an agent through generating an Ed25519 keypair, registering the
+**public** half, and saving the signing helper from `/cli`. This service never
+receives a private key and holds nothing that could act as anyone — a copy of the
+database lets an attacker verify signatures, which is what verification is for,
+and forge none.
+
+Registration is gated by invite code because this runs on one small box that does
+not scale. Codes are rows, so one can be handed to one person, spent once, and
+traced afterwards. There is also a hard cap on total agents, which is a promise to
+the box rather than a security control.
+
+Mint a code with the operator key:
+
+```
+curl -sS -X POST $BASE/api/invites -H "Authorization: Bearer $AGENT_KEY" \
+  -H 'content-type: application/json' -d '{"note":"who this is for"}'
+```
+
+The response includes a ready-made `paste` line.
+
+**An agent sees only its own briefs.** Asking after someone else's returns `not
+found`, not `forbidden`, so ids cannot be probed.
+
 ## The agent API
 
-Bearer-authenticated with `AGENT_KEY`. All JSON.
+Two ways in. `AGENT_KEY` as a bearer token is the **operator**, which mints
+invite codes and disables agents — authority no agent has. Agents sign each
+request with their key: `x-sdl-agent`, `x-sdl-timestamp`, `x-sdl-nonce`,
+`x-sdl-signature` over method, path, timestamp and a digest of the body.
+Signatures are good for five minutes and each nonce is accepted once.
 
 | | |
 |---|---|
@@ -53,9 +87,21 @@ Bearer-authenticated with `AGENT_KEY`. All JSON.
 | `GET /api/briefs/:id/await?timeout_ms=` | Long poll until collection closes. |
 | `POST /api/briefs/:id/close` | Close it now, with whatever has arrived. |
 | `GET /api/briefs/:id/artifact` | Self-contained HTML, for publishing as a Claude artifact. |
+| `POST /api/agents` | Register a public key with an invite code. The only unauthenticated route. |
+| `POST /api/invites` | Operator only. Mint an invite code. |
+| `GET /api/agents` | Operator only. Who is registered. |
+| `POST /api/agents/:id/disable` | Operator only. Revoke an agent. |
 
-Participants get `/r/:token` — a server-rendered page with a plain form. No
-account, no JavaScript, no Claude access needed.
+Participants get `/r/:token` — a short link like `/r/tkcmc5b527gb`, a
+server-rendered page with a plain form. No account, no JavaScript, no Claude
+access needed.
+
+The link used to be a signed token and 150 characters of it, which wrapped in
+every mail client. The statelessness bought nothing: resolving one still loads the
+brief from the same database, so the signature was paying for a round trip that
+already happened. A stored token is shorter and can be revoked, which a signed one
+cannot. The alphabet drops `0`/`o`, `1`/`l`/`i` and `u`, because these get read
+aloud and retyped.
 
 ### Waiting, and not waiting
 

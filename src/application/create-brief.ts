@@ -1,6 +1,8 @@
+import type { Actor } from "../domain/agent.ts";
 import type { Brief, Intent, Participant } from "../domain/brief.ts";
 import type { Json } from "../domain/json.ts";
 import { briefId, participantId } from "../domain/ids.ts";
+import { BRIEF_ID_LENGTH } from "../domain/shortid.ts";
 import type { ParticipantId } from "../domain/ids.ts";
 import { collectsInput } from "../domain/primitives.ts";
 import type { CollectionPolicy } from "../domain/policy.ts";
@@ -17,6 +19,7 @@ export type CreateBriefInput = {
   participants: ParticipantInput[];
   policy: CollectionPolicy;
   intent: Intent;
+  linkTtlSeconds: number;
 };
 
 // The token is returned once, here. The service stores no participant URL: the
@@ -26,7 +29,11 @@ export type Invitation = { participantId: ParticipantId; name: string; token: st
 
 export type CreateBriefResult = { brief: Brief; invitations: Invitation[] };
 
-export async function createBrief(deps: Deps, input: CreateBriefInput): Promise<ParsedAll<CreateBriefResult>> {
+export async function createBrief(
+  deps: Deps,
+  actor: Actor,
+  input: CreateBriefInput,
+): Promise<ParsedAll<CreateBriefResult>> {
   if (input.title.trim() === "") return noAll(["title: must not be empty"]);
   if (input.intent.purpose.trim() === "") {
     // Not a formality. An ephemeral agent hands off a handle and exits; responses
@@ -46,12 +53,13 @@ export async function createBrief(deps: Deps, input: CreateBriefInput): Promise<
     return noAll(["participants: a brief with input fields needs at least one participant"]);
   }
 
-  const id = briefId(deps.ids.fresh());
+  const id = briefId(deps.ids.fresh(BRIEF_ID_LENGTH));
   if (!id.ok) return noAll([`could not mint a brief id: ${id.reason}`]);
 
   const now = deps.clock.now().toISOString();
   const brief: Brief = {
     id: id.value,
+    ...(actor.kind === "agent" ? { agentId: actor.agentId } : {}),
     title: input.title,
     blocks: blocks.value,
     participants: participants.value,
@@ -66,16 +74,21 @@ export async function createBrief(deps: Deps, input: CreateBriefInput): Promise<
 
   await deps.briefs.create(brief);
 
-  return okAll({
-    brief,
-    invitations: collecting
-      ? participants.value.map((p) => ({
-          participantId: p.id,
-          name: p.name,
-          token: deps.tokens.mint(brief.id, p.id),
-        }))
-      : [],
-  });
+  // Links are issued after the brief exists. They reference it, and a link to a
+  // brief that failed to store is a 404 handed to a stakeholder.
+  const invitations: Invitation[] = [];
+  if (collecting) {
+    const expiresAt = new Date(deps.clock.now().getTime() + input.linkTtlSeconds * 1000);
+    for (const p of participants.value) {
+      invitations.push({
+        participantId: p.id,
+        name: p.name,
+        token: await deps.links.issue(brief.id, p.id, expiresAt),
+      });
+    }
+  }
+
+  return okAll({ brief, invitations });
 }
 
 function normaliseParticipants(inputs: readonly ParticipantInput[]): ParsedAll<Participant[]> {

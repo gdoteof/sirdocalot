@@ -15,7 +15,7 @@ export function participantApp(deps: Deps, renderer: Renderer): Hono {
 
   app.get("/r/:token", async (c) => {
     const token = c.req.param("token");
-    const claim = deps.tokens.verify(token);
+    const claim = await deps.links.resolve(token, deps.clock.now());
     if (claim === undefined) return c.html(gone("This link is not valid, or it has expired."), 404);
 
     const brief = await deps.briefs.get(claim.briefId);
@@ -43,7 +43,7 @@ export function participantApp(deps: Deps, renderer: Renderer): Hono {
 
   app.post("/r/:token", async (c) => {
     const token = c.req.param("token");
-    const claim = deps.tokens.verify(token);
+    const claim = await deps.links.resolve(token, deps.clock.now());
     if (claim === undefined) return c.html(gone("This link is not valid, or it has expired."), 404);
 
     const brief = await deps.briefs.get(claim.briefId);

@@ -38,7 +38,6 @@ services:
       DATABASE_URL: postgres://sirdocalot:sirdocalot@postgres:5432/sirdocalot
       DATABASE_SCHEMA: sirdocalot
       AGENT_KEY: dev-agent-key
-      TOKEN_SECRET: dev-token-secret-not-for-anything-real
       BASE_URL: http://localhost:8080
       PORT: "8080"
     ports:
