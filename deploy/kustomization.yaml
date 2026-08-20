@@ -1,0 +1,7 @@
+# Flux's Kustomization points at this directory; this names what it should apply.
+# flux-source.yaml is deliberately absent -- it belongs in chuggy-fabric, and
+# applying it from here would make the app repo declare its own wiring.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - sirdocalot.yaml

@@ -1,0 +1,27 @@
+{
+  "name": "sirdocalot",
+  "description": "Structured briefs agents hand to operators, and the answers they hand back",
+  "scripts": {
+    "build": "tsc -p .",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "test": "node --test --experimental-strip-types 'test/**/*.test.ts'",
+    "boundaries": "depcruise src --config .dependency-cruiser.cjs"
+  },
+  "private": "true",
+  "type": "module",
+  "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "hono": "^4.13.3",
+    "pg": "^8.23.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/pg": "^8.23.1",
+    "dependency-cruiser": "^18.2.0",
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.12",
+    "typescript": "^6.0.3"
+  }
+}

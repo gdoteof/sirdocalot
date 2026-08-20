@@ -1,0 +1,51 @@
+# The local stack, in one command: `docker compose up`.
+#
+# The credentials here are development values on purpose -- a local stack that
+# needs a secrets ceremony before it runs is one people stop running. Nothing in
+# this file is used by the cluster, which takes its secrets from Kubernetes.
+
+services:
+  postgres:
+    # Same major as cluster/apps/postgres.yaml in chuggy-fabric. A local database
+    # that differs from the deployed one is a source of bugs that only appear
+    # after deploy, which is the worst place to find them.
+    image: postgres:18.3-trixie
+    environment:
+      POSTGRES_USER: sirdocalot
+      POSTGRES_PASSWORD: sirdocalot
+      POSTGRES_DB: sirdocalot
+      # Parity with cluster/apps/postgres.yaml in chuggy-fabric.
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    # Deliberately not published. The service reaches it over the compose network,
+    # and a published port collides with whatever Postgres the developer already
+    # runs. `docker compose exec postgres psql -U sirdocalot` needs no port.
+    volumes:
+      # MOUNT THE PARENT, NOT `data`. Postgres 18's image moved PGDATA to
+      # /var/lib/postgresql/18/docker and the volume to /var/lib/postgresql.
+      # The same note is on cluster/apps/postgres.yaml in chuggy-fabric, for the
+      # same reason: mounting the pre-18 path leaves the real data directory on
+      # the container's writable layer, where it is lost on restart.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sirdocalot -d sirdocalot"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  sirdocalot:
+    build: .
+    environment:
+      DATABASE_URL: postgres://sirdocalot:sirdocalot@postgres:5432/sirdocalot
+      DATABASE_SCHEMA: sirdocalot
+      AGENT_KEY: dev-agent-key
+      TOKEN_SECRET: dev-token-secret-not-for-anything-real
+      BASE_URL: http://localhost:8080
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

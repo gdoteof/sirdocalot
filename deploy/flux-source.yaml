@@ -1,0 +1,33 @@
+# Drop this one file into chuggy-fabric's cluster/apps/, commit, push.
+#
+# It teaches Flux to follow THIS repo for the app's manifests, so every later
+# change to deploy/sirdocalot.yaml reconciles without touching chuggy-fabric
+# again. That is the second GitRepository its README anticipates.
+#
+# Until this repo has a remote Flux can reach, the interim path is to copy
+# deploy/sirdocalot.yaml into chuggy-fabric/cluster/apps/ instead and skip this
+# file entirely.
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: sirdocalot
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://github.com/gdoteof/sirdocalot
+  ref:
+    branch: main
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: sirdocalot
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./deploy
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: sirdocalot
