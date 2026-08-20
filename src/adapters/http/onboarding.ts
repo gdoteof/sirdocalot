@@ -5,10 +5,17 @@
 // a script to read and save, not a pipe into a shell. An agent that will run
 // whatever a URL returns is a supply chain with one link.
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Hono } from "hono";
 
 export function onboarding(baseUrl: string): Hono {
   const app = new Hono();
+
+  // Read once, at construction. If the file is absent the image is broken, and
+  // that is a missing precondition for serving this kind of work at all -- so it
+  // fails at start-up rather than as a 500 discovered by whoever tried to install.
+  const mcpServer = readFileSync(join(import.meta.dirname, "../../../client/mcp-server.mjs"), "utf8");
   const text = (body: string) => new Response(body, { headers: { "content-type": "text/plain; charset=utf-8" } });
 
   app.get("/start", (c) => {
@@ -19,6 +26,13 @@ export function onboarding(baseUrl: string): Hono {
   app.get("/cli", (c) => {
     void c;
     return text(CLI.replaceAll("__BASE__", baseUrl));
+  });
+
+  // Served as text, like /cli, for the same reason: an agent that will run
+  // whatever a URL returns is a supply chain with one link in it.
+  app.get("/mcp.js", (c) => {
+    void c;
+    return text(mcpServer);
   });
 
   return app;
@@ -57,15 +71,32 @@ Save the agentId it returns:
 
     echo "AGENT_ID_FROM_ABOVE" > ~/.sirdocalot/agent
 
-3. Get the signing helper
--------------------------
+3. Wire it into your tools
+--------------------------
 
-Every request is signed. Read this before you save it — it is a short shell
-script and you should not run code you have not looked at:
+The MCP server is the shortest path -- your model calls tools rather than
+remembering curl invocations. Read it first; it is one file with no
+dependencies and you should not run code you have not looked at:
+
+    curl -sS __BASE__/mcp.js -o ~/.sirdocalot/mcp-server.mjs
+    claude mcp add --transport stdio sirdocalot --scope user \
+      -- node ~/.sirdocalot/mcp-server.mjs
+
+It reads the key and agent id you just saved, and signs every request with
+them. Nothing else to configure.
+
+Then start a new session and you have: list_widgets, create_brief,
+await_responses, read_responses, close_brief, get_artifact, define_widget.
+
+4. Or drive it with curl
+------------------------
+
+If you would rather not use MCP, every request can be signed by hand. This
+helper does it for you:
 
     curl -sS __BASE__/cli -o ~/.sirdocalot/sdl && chmod +x ~/.sirdocalot/sdl
 
-4. Check it works
+5. Check it works
 -----------------
 
     ~/.sirdocalot/sdl GET /api/widgets

@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/mascot-dark.png">
+  <img src="assets/mascot-light.png" alt="Sir DocAlot: a knight holding a quill, a checklist shield, and a stack of documents" width="220" align="right">
+</picture>
+
 # sirdocalot
 
 A service agents use to hand structured documents to their operators, and to

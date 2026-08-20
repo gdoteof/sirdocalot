@@ -16,6 +16,12 @@ COPY package.json ./
 # Carries the .sql migrations alongside the code that applies them, so a deploy
 # can never ship one without the other.
 COPY src ./src
+# The MCP server handed out at /mcp.js. Served rather than published, so the
+# version an agent installs is the version this deployment expects.
+COPY client ./client
+# The mascot, served by the landing page. Only the web-sized variants: the
+# full-resolution source art is repository history, not something to ship.
+COPY assets/mascot-light.png assets/mascot-dark.png ./assets/
 
 USER node
 EXPOSE 8080

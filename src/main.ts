@@ -21,6 +21,7 @@ import { hostedRenderer } from "./adapters/render/hosted.ts";
 import { agentApi } from "./adapters/http/agent-api.ts";
 import { participantApp } from "./adapters/http/participant-app.ts";
 import { onboarding } from "./adapters/http/onboarding.ts";
+import { landing } from "./adapters/http/landing.ts";
 
 const config = loadConfig();
 const db = connect(config.databaseUrl, config.databaseSchema);
@@ -74,6 +75,7 @@ app.route(
     },
   ),
 );
+app.route("/", landing(config.baseUrl));
 app.route("/", onboarding(config.baseUrl));
 app.route("/", participantApp(deps, hostedRenderer()));
 

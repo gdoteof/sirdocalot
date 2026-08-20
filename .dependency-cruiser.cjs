@@ -50,7 +50,16 @@ module.exports = {
       to: {
         reachable: true,
         path: `^src/adapters/(?!${dir}/)`,
-        pathNot: "^src/adapters/clock\\.ts$",
+        // Two exceptions, and they are the same exception twice: a leaf module
+        // with no dependencies of its own and no behaviour to couple to. clock.ts
+        // is the ambient capabilities every adapter needs; style.ts is one string
+        // of CSS that the rendered pages and the landing page must agree on, and
+        // a second copy of it would be two designs drifting apart.
+        //
+        // Named individually rather than by directory on purpose. The moment
+        // either grows a dependency or a decision, it stops qualifying, and the
+        // exemption has to be argued again rather than inherited.
+        pathNot: "^src/adapters/(clock\\.ts|render/style\\.ts)$",
       },
     })),
     {
