@@ -28,11 +28,11 @@
 #     --from-literal=agent-key=$(openssl rand -hex 24) \
 #     --from-literal=token-secret=$(openssl rand -hex 32) \
 #     --from-literal=database-url='postgres://sirdocalot:<pw>@postgres.chuggy.svc.cluster.local:5432/sirdocalot'
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: sirdocalot
+#
+# THE NAMESPACE IS NOT DECLARED HERE, deliberately. It is created by
+# chuggy-fabric alongside the Secret above, and the two belong together: a
+# Kustomization that owned the namespace would delete the secret with it the
+# first time this path changed. What is owned here is the workload.
 ---
 apiVersion: apps/v1
 kind: Deployment
