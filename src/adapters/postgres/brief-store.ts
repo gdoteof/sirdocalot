@@ -1,5 +1,5 @@
 import type { Brief, Intent, Participant } from "../../domain/brief.ts";
-import type { BriefId } from "../../domain/ids.ts";
+import type { AgentId, BriefId } from "../../domain/ids.ts";
 import type { CloseReason, CollectionPolicy } from "../../domain/policy.ts";
 import type { PrimitiveBlock } from "../../domain/primitives.ts";
 import type { Response } from "../../domain/response.ts";
@@ -8,6 +8,7 @@ import type { Db } from "./pool.ts";
 
 type BriefRow = {
   id: string;
+  agent_id: string | null;
   title: string;
   blocks: PrimitiveBlock[];
   participants: Participant[];
@@ -32,10 +33,13 @@ export function briefStore(db: Db): BriefStore {
   return {
     async create(brief: Brief): Promise<void> {
       await db.query(
-        `insert into briefs (id, title, blocks, participants, policy, intent, created_at, closed_at, closed_reason)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        `insert into briefs (id, agent_id, title, blocks, participants, policy, intent, created_at, closed_at, closed_reason)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           brief.id,
+          // Omitting this is how every brief came back ownerless, which made
+          // ownsBrief() false for its own creator and every read a 404.
+          brief.agentId ?? null,
           brief.title,
           JSON.stringify(brief.blocks),
           JSON.stringify(brief.participants),
@@ -54,6 +58,7 @@ export function briefStore(db: Db): BriefStore {
       if (row === undefined) return undefined;
       return {
         id: row.id as BriefId,
+        ...(row.agent_id !== null ? { agentId: row.agent_id as AgentId } : {}),
         title: row.title,
         blocks: row.blocks,
         participants: row.participants,

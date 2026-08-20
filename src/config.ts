@@ -50,7 +50,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     // a config change rather than a migration.
     baseUrl: (env["BASE_URL"] ?? `http://localhost:${number(env, "PORT", 8080)}`).replace(/\/+$/, ""),
     linkTtlSeconds: number(env, "LINK_TTL_HOURS", 24 * 14) * 3600,
-    maxAwaitMs: number(env, "MAX_AWAIT_MS", 5 * 60 * 1000),
+    // Ninety seconds, and the number is measured rather than chosen. Cloudflare
+    // gives an origin about 100s to respond before returning 524; a 150s poll
+    // through the tunnel died at 125s with error 524 and no body. Holding a
+    // connection past that ceiling does not make the caller wait longer, it makes
+    // the wait fail. So each poll returns inside the window with timedOut: true,
+    // and a caller that wants to wait longer calls again -- which the MCP client
+    // does on the caller's behalf.
+    maxAwaitMs: number(env, "MAX_AWAIT_MS", 90 * 1000),
     pollIntervalMs: number(env, "POLL_INTERVAL_MS", 2000),
     ...(env["NOTIFY_WEBHOOK"] !== undefined && env["NOTIFY_WEBHOOK"] !== ""
       ? { notifyWebhook: env["NOTIFY_WEBHOOK"] }
