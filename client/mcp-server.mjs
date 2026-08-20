@@ -22,7 +22,7 @@ import { join } from "node:path";
 const BASE_URL = (process.env.SIRDOCALOT_URL ?? "https://sirdocalot.vteng.io").replace(/\/+$/, "");
 const CRED_DIR = process.env.SIRDOCALOT_HOME ?? join(homedir(), ".sirdocalot");
 
-const SERVER_INFO = { name: "sirdocalot", version: "0.2.0" };
+const SERVER_INFO = { name: "sirdocalot", version: "0.3.0" };
 const FALLBACK_PROTOCOL_VERSION = "2025-06-18";
 
 // stdout carries the protocol and nothing else. One stray character corrupts the
@@ -640,14 +640,43 @@ const lines = createInterface({ input: process.stdin });
 // Not awaited: a long await_responses can hold its connection for minutes, and
 // serialising would leave pings and other calls queued behind it for that whole
 // time. Each line carries its own id, so replies may return out of order.
+//
+// Which means work outlives the line that started it, and stdin closing is not
+// the same event as being finished. Exiting on close alone kills whatever is in
+// flight and can truncate a reply mid-write, so the count is tracked and the
+// exit waits for it.
+let inFlight = 0;
+let stdinClosed = false;
+
+function exitWhenDrained() {
+  if (stdinClosed && inFlight === 0) process.exit(0);
+}
+
 lines.on("line", (line) => {
-  handleLine(line).catch((error) => {
-    log("line handler rejected:", error instanceof Error ? error.stack ?? error.message : String(error));
-  });
+  inFlight += 1;
+  handleLine(line)
+    .catch((error) => {
+      log("line handler rejected:", error instanceof Error ? error.stack ?? error.message : String(error));
+    })
+    .finally(() => {
+      inFlight -= 1;
+      exitWhenDrained();
+    });
 });
 
 lines.on("close", () => {
-  process.exit(0);
+  stdinClosed = true;
+  if (inFlight === 0) {
+    process.exit(0);
+    return;
+  }
+  log(`stdin closed with ${inFlight} request(s) in flight; draining`);
+  // A bound, so a wedged request cannot keep the process alive for ever. Longer
+  // than one poll slice, so an await_responses in its wait is not cut short.
+  setTimeout(() => {
+    log("drain timed out; exiting anyway");
+    process.exit(0);
+  }, 90_000).unref();
 });
 
 // A dead server looks to the client like a broken connection with no
