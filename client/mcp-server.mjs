@@ -6,7 +6,7 @@
 // is run, so it stays flat: credentials, signing, the HTTP call, the tool table,
 // then the protocol loop.
 //
-//   SIRDOCALOT_URL   base URL of the service   (default https://sirdocalot.vteng.io)
+//   SIRDOCALOT_URL   base URL of the service   (default: whichever instance served this file)
 //   SIRDOCALOT_HOME  credentials directory     (default ~/.sirdocalot)
 //
 // The credentials directory holds `key.pem`, an Ed25519 private key, and `agent`,
@@ -19,7 +19,15 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const BASE_URL = (process.env.SIRDOCALOT_URL ?? "https://sirdocalot.vteng.io").replace(/\/+$/, "");
+// __BASE__ is substituted by the instance serving this file, so a client
+// downloaded from your own deployment defaults to your own deployment. Running
+// it straight from a checkout leaves the placeholder, which is why that case
+// falls back to localhost rather than to somebody else's host: signing requests
+// to a server that has never seen your key fails as "unauthorized", which reads
+// like a broken signature rather than the wrong address.
+const SERVED_BASE = "__BASE__";
+const DEFAULT_BASE = SERVED_BASE.startsWith("http") ? SERVED_BASE : "http://localhost:8080";
+const BASE_URL = (process.env.SIRDOCALOT_URL ?? DEFAULT_BASE).replace(/\/+$/, "");
 const CRED_DIR = process.env.SIRDOCALOT_HOME ?? join(homedir(), ".sirdocalot");
 
 const SERVER_INFO = { name: "sirdocalot", version: "0.3.0" };

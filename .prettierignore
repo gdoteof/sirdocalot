@@ -1,0 +1,7 @@
+# Markdown here is hand-wrapped at about 80 columns, and prettier reflows it
+# wholesale -- a `just fmt` would rewrite every prose file in the repo and bury
+# the actual change in a diff nobody can read.
+*.md
+
+# Verbatim licence text. Not ours to reformat.
+LICENSE
