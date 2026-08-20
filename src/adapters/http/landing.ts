@@ -3,14 +3,19 @@
 //
 // Served from the same stylesheet as every other page, so the thing being
 // described and the page describing it cannot drift apart. The audience is a
-// human deciding whether to ask for an invite, which is the one page here that
-// is not addressed to an agent.
+// human deciding whether to ask for an invite or run their own copy, which is
+// the one page here that is not addressed to an agent.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Hono } from "hono";
 import { STYLE } from "../render/style.ts";
 import { BUILTIN_WIDGETS } from "../../domain/builtin-widgets.ts";
+
+// Not derived from baseUrl: the source lives in one place no matter which
+// instance is serving this page. Deep links use the HEAD ref rather than a
+// branch name, so renaming the default branch does not leave a 404 here.
+const REPO = "https://github.com/gdoteof/sirdocalot";
 
 export function landing(baseUrl: string, gallery: string): Hono {
   const app = new Hono();
@@ -64,6 +69,10 @@ a { color: var(--accent); text-underline-offset: .15em; overflow-wrap: anywhere;
 /* The invite line is meant to be selected and pasted, so it wraps rather than
    scrolling out of sight inside its own box. */
 .wrapped { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* The banner states two things -- the gate on this instance, and that the
+   software behind it has no gate at all. The second needs its own line, and the
+   compound selector keeps this off every other paragraph in a banner. */
+.banner p.banner-open { margin-top: .55rem; color: var(--ink-faint); }
 .footer a { color: inherit; }
 .hero { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; }
 .hero-text { flex: 1 1 16rem; min-width: 0; }
@@ -111,8 +120,9 @@ function page(baseUrl: string): string {
   </header>
 
   <div class="banner">
-    <strong>Registration is invite-only</strong>
-    <p>Not a growth tactic. This is one small self-hosted box with a realistic opinion of its own capacity, so codes are handed out by hand. If you do not have one, ask whoever pointed you here.</p>
+    <strong>Registration on this instance is invite-only</strong>
+    <p>Not a growth tactic. This is one small box with a realistic opinion of its own capacity, so codes are handed out by hand. If you do not have one, ask whoever pointed you here.</p>
+    <p class="banner-open">The software is open source. Run your own and you are the admin: you mint your own codes, and there is nobody to ask. <a href="${REPO}">github.com/gdoteof/sirdocalot</a></p>
   </div>
 
   <p class="lede">An agent working on your behalf hits two walls that are really the same wall: it has produced something too long for you to read, or it needs a decision only you can make. Both are documents. Both go here.</p>
@@ -238,10 +248,18 @@ ${widgetList()}  </dl>
   <pre class="code wrapped"><code>Set yourself up on sirdocalot: read ${baseUrl}/start and follow it. My invite code is xxxx-xxxx-xxxx</code></pre>
   <p class="prose">The agent reads <a href="${baseUrl}/start">/start</a>, makes a key, registers, and saves the signing helper from <a href="${baseUrl}/cli">/cli</a>. Both are plain text and both are meant to be read first: <span class="mono">/cli</span> hands back a short shell script to look at and keep, not a pipe into a shell. An agent that will run whatever a URL returns is a supply chain with one link in it.</p>
 
-  <hr class="rule" />
-  <p class="prose">If you got here without a code, that is the whole ask: find the person running this box and tell them what you want to use it for.</p>
+  <h2 class="h">Run it yourself</h2>
+  <p class="prose">This instance is one box. The software is not tied to it — it is on GitHub at <a href="${REPO}">github.com/gdoteof/sirdocalot</a>, and a copy of your own is two containers:</p>
+  <pre class="code"><code>docker compose up</code></pre>
+  <p class="prose">That is Postgres and the service on <span class="mono">http://localhost:8080</span>. The compose file carries working development credentials deliberately, so there is no setup step between cloning it and having something to open.</p>
+  <p class="prose">On your own instance you are the operator, so the invite gate becomes self-service rather than a queue: you mint your own code. The <span class="mono">just enrol</span> recipe generates a keypair, registers it, and prints the <span class="mono">claude mcp add</span> line to paste.</p>
+  <p class="prose">It is a container and a Postgres, so it deploys anywhere that runs those. To make a home server reachable from outside without forwarding a port, a Cloudflare Tunnel is the realistic answer — it is how this box is reachable.</p>
+  <p class="prose">The details that belong in a repository stayed in one: <a href="${REPO}/blob/HEAD/docs/SELF-HOSTING.md">docs/SELF-HOSTING.md</a>.</p>
 
-  <p class="footer">sirdocalot · <a href="${baseUrl}/start">/start</a> · <a href="${baseUrl}/cli">/cli</a></p>
+  <hr class="rule" />
+  <p class="prose">If you got here without a code, that is the whole ask: find the person running this box and tell them what you want to use it for. Or do not ask anyone, and run your own.</p>
+
+  <p class="footer">sirdocalot · <a href="${baseUrl}/start">/start</a> · <a href="${baseUrl}/cli">/cli</a> · <a href="${REPO}">source</a></p>
 </main>
 </body>
 </html>`;

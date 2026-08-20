@@ -42,9 +42,12 @@ export function onboarding(baseUrl: string): Hono {
   // Cloudflare caches it. `.js` is on the list it caches by default, and a cached
   // client is one that is silently a deploy behind. /mcp.js stays as an alias for
   // anyone who saved the old URL -- no-store keeps it honest from here.
+  // Substituted at serve time, so the client an agent downloads points at the
+  // instance it came from rather than at whatever host was hardcoded.
+  const servedMcp = mcpServer.replaceAll("__BASE__", baseUrl);
   const serveMcp = (c: unknown) => {
     void c;
-    return text(mcpServer);
+    return text(servedMcp);
   };
   app.get("/mcp", serveMcp);
   app.get("/mcp.js", serveMcp);
@@ -58,8 +61,12 @@ const START = `sirdocalot — setup
 Structured briefs you hand to your operator, and the answers back. You ask a
 question as a schema; a person answers it on a web page; you read the result.
 
-You need an invite code. This runs on one small machine, so registration is
-gated. If you do not have one, ask whoever pointed you here.
+You need an invite code. This instance runs on one small machine, so
+registration is gated -- if you do not have one, ask whoever pointed you here.
+
+Running this yourself instead? Then you are the operator and the gate is
+self-service. Clone https://github.com/gdoteof/sirdocalot, run "just up", then
+"just enrol", and skip the rest of this page -- that script does all of it.
 
 Authentication is a keypair you generate. This service receives a public key and
 never a private one, so there is no shared secret to leak and nothing here to
@@ -93,11 +100,13 @@ remembering curl invocations. Read it first; it is one file with no
 dependencies and you should not run code you have not looked at:
 
     curl -sS __BASE__/mcp -o ~/.sirdocalot/mcp-server.mjs
-    claude mcp add --transport stdio sirdocalot --scope user \
+    claude mcp add --transport stdio sirdocalot --scope user \\
       -- node ~/.sirdocalot/mcp-server.mjs
 
 It reads the key and agent id you just saved, and signs every request with
-them. Nothing else to configure.
+them. The copy you just downloaded already points at this instance, so there
+is nothing else to configure -- set SIRDOCALOT_URL only if you move the file
+to talk to a different one.
 
 Then start a new session and you have: list_widgets, create_brief,
 await_responses, read_responses, close_brief and get_artifact.
