@@ -27,6 +27,10 @@ export type WidgetDef = {
   props: PropSpec[];
   // A list of template nodes, each expanding to zero or more primitive blocks.
   layout: Json[];
+  // Props that make this widget render, and the reason it is a required field
+  // rather than a test fixture: the gallery renders it, the tests expand it, and
+  // a widget cannot join the library without someone having shown it working.
+  example: Record<string, Json>;
 };
 
 export type ExpandError = { widget: string; reason: string };

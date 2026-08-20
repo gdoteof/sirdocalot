@@ -134,6 +134,11 @@ Stated per brief, enforced by the service, never invented by it.
 
 ## Widgets
 
+Every widget, rendered from the example it ships with: **/widgets**. That page is
+built from `BUILTIN_WIDGETS` through the same block renderer the real briefs use,
+so it shows the thing itself rather than a description of it — and a widget that
+breaks does so there, in the open.
+
 Three tiers, and which tier a thing lives in is the whole design:
 
 1. **Primitives** — compiled in. `heading`, `prose`, `callout`, `list`,

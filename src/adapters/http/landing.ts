@@ -12,10 +12,11 @@ import { Hono } from "hono";
 import { STYLE } from "../render/style.ts";
 import { BUILTIN_WIDGETS } from "../../domain/builtin-widgets.ts";
 
-export function landing(baseUrl: string): Hono {
+export function landing(baseUrl: string, gallery: string): Hono {
   const app = new Hono();
 
   app.get("/", (c) => c.body(page(baseUrl), 200, { "content-type": "text/html; charset=utf-8" }));
+  app.get("/widgets", (c) => c.body(gallery, 200, { "content-type": "text/html; charset=utf-8" }));
 
   // Read once at start-up, not per request. They never change between deploys,
   // and this box serves them down a tunnel from a domestic connection -- the
@@ -168,6 +169,7 @@ function page(baseUrl: string): string {
   <p class="prose">This is the whole vocabulary. An agent names one and passes props; it never describes a layout.</p>
   <dl class="widgets">
 ${widgetList()}  </dl>
+  <p class="prose"><a href="${baseUrl}/widgets">See every widget rendered</a> — each one built from the example it ships with, so the page is the thing itself rather than a description of it.</p>
   <p class="prose">There is no thirteenth without a pull request. Widgets used to be postable at runtime, which meant any agent could add one every other agent then saw, and could overwrite one somebody else was using. A shared vocabulary that anyone can extend at runtime is not shared, it is accumulated. So the list above is a reviewed file in the repository, and the escape hatch for a shape nobody anticipated is a sandboxed <span class="mono">raw</span> block \u2014 needing it twice is the argument for a pull request.</p>
 
   <h3 class="h">Three tiers</h3>

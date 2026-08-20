@@ -18,6 +18,7 @@ import { linkStore } from "./adapters/postgres/link-store.ts";
 import { loggingNotifier, webhookNotifier } from "./adapters/notify/webhook.ts";
 import { artifactRenderer } from "./adapters/render/artifact.ts";
 import { hostedRenderer } from "./adapters/render/hosted.ts";
+import { galleryPage } from "./adapters/render/gallery.ts";
 import { agentApi } from "./adapters/http/agent-api.ts";
 import { participantApp } from "./adapters/http/participant-app.ts";
 import { onboarding } from "./adapters/http/onboarding.ts";
@@ -74,7 +75,7 @@ app.route(
     },
   ),
 );
-app.route("/", landing(config.baseUrl));
+app.route("/", landing(config.baseUrl, galleryPage(config.baseUrl)));
 app.route("/", onboarding(config.baseUrl));
 app.route("/", participantApp(deps, hostedRenderer()));
 

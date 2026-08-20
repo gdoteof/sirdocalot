@@ -25,7 +25,8 @@ const define = (
   summary: string,
   props: WidgetDef["props"],
   layout: Json[],
-): WidgetDef => ({ name: named(name), summary, props, layout });
+  example: Record<string, Json>,
+): WidgetDef => ({ name: named(name), summary, props, layout, example });
 
 const req = (name: string, type: WidgetDef["props"][number]["type"], description: string) => ({
   name,
@@ -51,6 +52,16 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
       { kind: "prose", text: { $: "lead" } },
       { $if: "points", then: [{ kind: "list", ordered: false, items: { $: "points" } }] },
     ],
+  
+    {
+          "title": "Why the nightly job doubled in cost",
+          "lead": "The job did not change. Its input did: a partner started sending us every row each night instead of only the ones that changed, so we reprocess 40M rows to find 12,000 that matter.",
+          "points": [
+                "Cost went from about $30 a night to $240, starting on the 3rd",
+                "No deploy went out that week; the code is unchanged",
+                "Their API still exposes a `since` parameter, and we stopped sending it"
+          ]
+    },
   ),
 
   define(
@@ -61,6 +72,28 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
       { kind: "heading", level: 2, text: { $: "title" } },
       { kind: "keyValue", entries: { $: "facts" } },
     ],
+  
+    {
+          "title": "Nightly job, last 7 days",
+          "facts": [
+                {
+                      "key": "Rows in",
+                      "value": "40,112,884"
+                },
+                {
+                      "key": "Rows changed",
+                      "value": "12,207 (0.03%)"
+                },
+                {
+                      "key": "Runtime",
+                      "value": "4h 12m, was 26m"
+                },
+                {
+                      "key": "Cost/night",
+                      "value": "$241, was $29"
+                }
+          ]
+    },
   ),
 
   define(
@@ -75,6 +108,27 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
         body: [{ kind: "callout", tone: { $: "finding.tone" }, title: { $: "finding.title" }, text: { $: "finding.detail" } }],
       },
     ],
+  
+    {
+          "title": "Review of the checkout patch",
+          "findings": [
+                {
+                      "tone": "danger",
+                      "title": "Refund path is not idempotent",
+                      "detail": "A retried webhook issues a second refund. The provider retries on any 5xx, and we return 500 on a DB timeout."
+                },
+                {
+                      "tone": "warn",
+                      "title": "Currency is assumed to be GBP",
+                      "detail": "Three call sites multiply by 100 to get pence. Correct today, wrong the day we take euros."
+                },
+                {
+                      "tone": "success",
+                      "title": "Rollback was tested",
+                      "detail": "Restored from snapshot in staging on Monday and timed at 4 minutes."
+                }
+          ]
+    },
   ),
 
   define(
@@ -90,6 +144,37 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
       { kind: "heading", level: 2, text: { $: "title" } },
       { kind: "table", columns: { $: "columns" }, rows: { $: "rows" }, caption: { $: "caption" } },
     ],
+  
+    {
+          "title": "Queue options",
+          "columns": [
+                "Option",
+                "Ops burden",
+                "Ordering",
+                "Cost/month"
+          ],
+          "rows": [
+                [
+                      "SQS",
+                      "None",
+                      "Best effort",
+                      "~$12"
+                ],
+                [
+                      "Redis Streams",
+                      "We run it",
+                      "Per stream",
+                      "~$40 (existing box)"
+                ],
+                [
+                      "Postgres table",
+                      "None new",
+                      "Total",
+                      "$0"
+                ]
+          ],
+          "caption": "All three handle the volume. Nothing here is about throughput."
+    },
   ),
 
   define(
@@ -106,6 +191,37 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
       { kind: "table", columns: { $: "columns" }, rows: { $: "rows" } },
       { $if: "recommendation", then: [{ kind: "callout", tone: "success", title: "Recommendation", text: { $: "recommendation" } }] },
     ],
+  
+    {
+          "title": "Where the job should run",
+          "columns": [
+                "Option",
+                "Change required",
+                "Cost/night",
+                "Risk"
+          ],
+          "rows": [
+                [
+                      "Send `since` again",
+                      "One line",
+                      "~$29",
+                      "Low, reverts a regression"
+                ],
+                [
+                      "Keep full loads, bigger box",
+                      "Config",
+                      "~$180",
+                      "Low, buys nothing"
+                ],
+                [
+                      "Diff on our side",
+                      "New component",
+                      "~$35",
+                      "We own a cache nobody asked for"
+                ]
+          ],
+          "recommendation": "Send `since` again. It restores the behaviour we had, and the other two treat a regression as a capacity problem."
+    },
   ),
 
   define(
@@ -123,6 +239,28 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
         rows: [{ $each: "events", as: "event", body: [[{ $: "event.when" }, { $: "event.what" }]] }],
       },
     ],
+  
+    {
+          "title": "What happened on the 3rd",
+          "events": [
+                {
+                      "when": "02:14",
+                      "what": "Nightly job starts as usual"
+                },
+                {
+                      "when": "02:41",
+                      "what": "First run to exceed its previous longest, no alert fires"
+                },
+                {
+                      "when": "06:26",
+                      "what": "Job finishes, 4h 12m"
+                },
+                {
+                      "when": "09:05",
+                      "what": "Cost alert fires on the daily rollup, 12 hours after the cause"
+                }
+          ]
+    },
   ),
 
   define(
@@ -140,6 +278,22 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
         ],
       },
     ],
+  
+    {
+          "title": "The line that changed the bill",
+          "notes": [
+                {
+                      "note": "The parameter was dropped when the client was regenerated. Nothing failed, because the API treats it as optional and returns everything.",
+                      "code": "- rows = client.list_orders(since=last_run_at)\\n+ rows = client.list_orders()",
+                      "language": "diff"
+                },
+                {
+                      "note": "The retry that turns one refund into two: any 5xx is retried by the provider, and a DB timeout returns 500.",
+                      "code": "except DatabaseTimeout:\\n    return Response(status=500)",
+                      "language": "python"
+                }
+          ]
+    },
   ),
 
   // ------------------------------------------------------------------ collects --
@@ -152,6 +306,28 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
       { $if: "context", then: [{ kind: "prose", text: { $: "context" } }] },
       { kind: "field", spec: { $: "field" } },
     ],
+  
+    {
+          "title": "Before I change the billing code",
+          "context": "The refund path is not idempotent: a retried webhook issues a second refund. Fixing it properly means storing an idempotency key per refund, which is a schema change.",
+          "field": {
+                "kind": "choice",
+                "id": "approach",
+                "label": "Which way should I go?",
+                "required": true,
+                "multiple": false,
+                "options": [
+                      {
+                            "value": "schema",
+                            "label": "Idempotency key in the schema, do it properly"
+                      },
+                      {
+                            "value": "guard",
+                            "label": "Guard on the existing refund id for now"
+                      }
+                ]
+          }
+    },
   ),
 
   define(
@@ -163,6 +339,47 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
       { $if: "intro", then: [{ kind: "prose", text: { $: "intro" } }] },
       { $each: "questions", as: "question", body: [{ kind: "field", spec: { $: "question" } }] },
     ],
+  
+    {
+          "title": "Before I start the migration",
+          "intro": "Three things I cannot answer from the code.",
+          "questions": [
+                {
+                      "kind": "choice",
+                      "id": "window",
+                      "label": "Which maintenance window?",
+                      "required": true,
+                      "multiple": false,
+                      "options": [
+                            {
+                                  "value": "sat",
+                                  "label": "Saturday 02:00"
+                            },
+                            {
+                                  "value": "sun",
+                                  "label": "Sunday 02:00"
+                            },
+                            {
+                                  "value": "none",
+                                  "label": "No window, do it live"
+                            }
+                      ]
+                },
+                {
+                      "kind": "boolean",
+                      "id": "backfill",
+                      "label": "Backfill historical rows in the same pass?",
+                      "required": false
+                },
+                {
+                      "kind": "text",
+                      "id": "anything",
+                      "label": "Anything I have not asked about?",
+                      "required": false,
+                      "long": true
+                }
+          ]
+    },
   ),
 
   define(
@@ -190,6 +407,12 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
       },
       { kind: "field", spec: { kind: "text", id: "reasoning", label: "Reasoning", required: false, long: true } },
     ],
+  
+    {
+          "title": "Sign-off needed",
+          "proposal": "Re-enable the `since` parameter on the partner client and redeploy the nightly job tonight.",
+          "detail": "One line, reverting an unintended change. It restores the behaviour we had before the 3rd. Worst case is that a night is missed and the next run picks it up, because the parameter is a lower bound rather than a filter."
+    },
   ),
 
   define(
@@ -210,6 +433,26 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
       { kind: "field", spec: { kind: "choice", id: "choice", label: { $: "question" }, required: true, multiple: false, options: { $: "options" } } },
       { kind: "field", spec: { kind: "text", id: "rationale", label: "Why?", required: false, long: true } },
     ],
+  
+    {
+          "title": "Two ways to fix the refund bug",
+          "context": "Both stop the double refund. They differ in what we owe afterwards.",
+          "question": "Which should I build?",
+          "options": [
+                {
+                      "value": "schema",
+                      "label": "Idempotency key column, unique index, provider key stored"
+                },
+                {
+                      "value": "guard",
+                      "label": "Check for an existing refund on the order before issuing"
+                },
+                {
+                      "value": "queue",
+                      "label": "Serialise refunds through a single worker"
+                }
+          ]
+    },
   ),
 
   define(
@@ -224,5 +467,28 @@ export const BUILTIN_WIDGETS: WidgetDef[] = [
         body: [{ kind: "field", spec: { kind: "rating", id: { $: "item.id" }, label: { $: "item.label" }, required: false, scale: { $: "scale" } } }],
       },
     ],
+  
+    {
+          "title": "How much do these worry you?",
+          "items": [
+                {
+                      "id": "double-refund",
+                      "label": "Refunds can be issued twice on retry"
+                },
+                {
+                      "id": "currency",
+                      "label": "Currency assumed to be GBP in three places"
+                },
+                {
+                      "id": "cost",
+                      "label": "Nightly job costing 8x what it did"
+                },
+                {
+                      "id": "alerting",
+                      "label": "Cost alert fired 12 hours after the cause"
+                }
+          ],
+          "scale": 5
+    },
   ),
 ];
