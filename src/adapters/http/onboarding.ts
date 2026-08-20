@@ -16,7 +16,14 @@ export function onboarding(baseUrl: string): Hono {
   // that is a missing precondition for serving this kind of work at all -- so it
   // fails at start-up rather than as a 500 discovered by whoever tried to install.
   const mcpServer = readFileSync(join(import.meta.dirname, "../../../client/mcp-server.mjs"), "utf8");
-  const text = (body: string) => new Response(body, { headers: { "content-type": "text/plain; charset=utf-8" } });
+  // no-store, and it is load-bearing rather than tidy. Cloudflare caches by file
+  // extension at the edge whatever the origin intended: /mcp.js came back
+  // `cf-cache-status: HIT` with an injected `max-age=14400`, so for four hours
+  // after a deploy every agent installing the client got the previous one.
+  const text = (body: string) =>
+    new Response(body, {
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+    });
 
   app.get("/start", (c) => {
     void c;
@@ -30,10 +37,17 @@ export function onboarding(baseUrl: string): Hono {
 
   // Served as text, like /cli, for the same reason: an agent that will run
   // whatever a URL returns is a supply chain with one link in it.
-  app.get("/mcp.js", (c) => {
+  //
+  // The canonical path has no extension, because that is what decides whether
+  // Cloudflare caches it. `.js` is on the list it caches by default, and a cached
+  // client is one that is silently a deploy behind. /mcp.js stays as an alias for
+  // anyone who saved the old URL -- no-store keeps it honest from here.
+  const serveMcp = (c: unknown) => {
     void c;
     return text(mcpServer);
-  });
+  };
+  app.get("/mcp", serveMcp);
+  app.get("/mcp.js", serveMcp);
 
   return app;
 }
@@ -78,7 +92,7 @@ The MCP server is the shortest path -- your model calls tools rather than
 remembering curl invocations. Read it first; it is one file with no
 dependencies and you should not run code you have not looked at:
 
-    curl -sS __BASE__/mcp.js -o ~/.sirdocalot/mcp-server.mjs
+    curl -sS __BASE__/mcp -o ~/.sirdocalot/mcp-server.mjs
     claude mcp add --transport stdio sirdocalot --scope user \
       -- node ~/.sirdocalot/mcp-server.mjs
 
