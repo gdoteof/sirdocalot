@@ -11,6 +11,27 @@ Design decisions, vocabulary, and open questions live in
 > Early stage — this file is the contract for how work happens here, not yet a
 > map of the code. Expand the architecture section as the codebase lands.
 
+## Ask through sirdocalot, not through chat
+
+This repo dogfoods its own product. When a decision needs the operator, put it in
+a brief rather than a chat question:
+
+    ./scripts/ask.sh new brief.json     # create; prints the participant links
+    ./scripts/ask.sh wait <id> 300      # hold until collection closes
+    ./scripts/ask.sh read <id>          # what has come back so far
+
+Hand over the link and stop. Do not paraphrase the questions back into chat —
+the whole point is finding out whether the brief carries them on its own.
+
+Two things this is for, beyond the answers. It is the only honest test of whether
+the widget set covers real questions: reaching for `raw`, or wishing for a widget
+that does not exist, is the signal to define one. And a brief that is tedious to
+answer is a bug in this product, not in the operator — record it.
+
+`AskUserQuestion` is still right for a quick either/or mid-task. A brief is for
+decisions worth a page: several questions, real context above them, or more than
+one person's view.
+
 ## Engineering practices
 
 This repo uses the [blessed practices](https://github.com/kasofsk/blessed-practices)
