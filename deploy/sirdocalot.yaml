@@ -66,7 +66,7 @@ spec:
           # registry in this cluster yet. `just cluster-image` does both.
           # IfNotPresent is load-bearing: with Always, k3s tries Docker Hub, finds
           # no such public image, and the pod never starts.
-          image: sirdocalot:0.4.0
+          image: sirdocalot:0.5.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
