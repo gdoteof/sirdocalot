@@ -18,13 +18,12 @@ export function formToAnswers(specs: readonly FieldSpec[], raw: Raw): Record<str
   for (const spec of specs) {
     const values = asStrings(raw[spec.id]);
 
-    // An unchecked box and an untouched field both submit nothing. Omitting them
-    // lets the domain apply its own required/optional rules rather than having
-    // this layer invent an empty value that then fails a different check.
-    if (values.length === 0) {
-      if (spec.kind === "boolean") answers[spec.id] = false;
-      continue;
-    }
+    // An untouched field submits nothing. Omitting it lets the domain apply its
+    // own required/optional rules rather than having this layer invent an empty
+    // value that then fails a different check -- and that includes booleans,
+    // which are answered by picking one of two radios and are therefore silent
+    // only when nobody answered them.
+    if (values.length === 0) continue;
 
     switch (spec.kind) {
       case "text":

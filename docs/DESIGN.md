@@ -20,22 +20,36 @@ declare a response schema. Same registry, same render pipeline, same storage.
 
 ## The core bet: a schema, not a framework
 
-Generating bespoke HTML costs thousands of output tokens every time, and that
-generation — not context loading, not deploy latency — is where the current
-approach is slow and expensive. So the agent-facing surface is a **schema it
-emits against**, not a framework it programs against:
+Handing work to a person by authoring a page costs thousands of output tokens
+every time, and leaves the whole page behind in the session that wrote it. So the
+agent-facing surface is a **schema it emits against**, not a framework it programs
+against:
 
 ```json
 {"type": "decision-matrix", "options": [...], "criteria": [...]}
 ```
 
-That is a 20–50× token reduction over an authored page, and it is the entire
-reason this service exists. Any design decision that pushes agents back toward
-writing markup has broken the bet.
+Any design decision that pushes agents back toward writing markup has broken the
+bet.
 
-> `OPEN` — worth confirming against two or three real past generations before
-> committing. If the dominant cost turns out to be context loading rather than
-> generation, the answer is a cached design doc, not this service.
+`MEASURED 2026-08-20.` The saving is real and it is in the *path*, not in the
+markup — which is not where it was expected to be, and is worth writing down.
+
+Compare the two generations alone and there is almost nothing in it: both arms
+write the same prose, and only one also writes the tags around it. Markup is the
+minority of an authored page, so a schema that removes it saves little.
+
+Compare the two *paths* end to end and the gap opens. One session forked twice,
+each fork asked to hand the same work to a person: composing a brief cost 2.4×
+less output, grew the session context 3.5× less, and finished about 2.9× faster
+than authoring and publishing a page ([the runs](https://sirdocalot.vteng.io/bench)). That path loads a design
+skill, writes a file, publishes it, and carries the whole page back through the
+transcript.
+
+Context growth is the one to watch, because it is the cost that compounds: every
+later turn in that session re-reads what the handover left behind.
+
+See [`/bench`](https://sirdocalot.vteng.io/bench) and `bench/README.md` for the runs and the caveats.
 
 ## Vocabulary
 

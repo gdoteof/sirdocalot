@@ -98,9 +98,20 @@ function renderField(spec: FieldSpec, ctx: FieldContext): string {
           spec.min !== undefined ? ` min="${spec.min}"` : ""
         }${spec.max !== undefined ? ` max="${spec.max}"` : ""}${required}${disabled} />`;
       case "boolean":
-        return `<label class="check"><input type="checkbox" name="${name}" value="true"${
-          value === true ? " checked" : ""
-        }${disabled} /> <span>Yes</span></label>`;
+        // Two radios rather than one checkbox. An unchecked box cannot say "no" --
+        // it is indistinguishable from an untouched one -- so a required boolean
+        // rendered that way offers agreement as the only reachable answer.
+        return `<div class="choices">${[
+          { v: "true", label: "Yes", on: value === true },
+          { v: "false", label: "No", on: value === false },
+        ]
+          .map(
+            (o) =>
+              `<label class="check"><input type="radio" name="${name}" value="${o.v}"${
+                o.on ? " checked" : ""
+              }${disabled} /> <span>${o.label}</span></label>`,
+          )
+          .join("")}</div>`;
       case "choice": {
         const picked = new Set(Array.isArray(value) ? value : value === undefined ? [] : [String(value)]);
         const type = spec.multiple ? "checkbox" : "radio";

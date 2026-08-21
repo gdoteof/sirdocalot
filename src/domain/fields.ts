@@ -17,6 +17,34 @@ export type FieldSpec =
 
 export type ChoiceOption = { value: string; label: string };
 
+// What a field spec may say, published so an agent does not have to guess it.
+//
+// Widget props describe a question as "a field spec", and for a long time that
+// was the only description there was: the five kinds and the shape of each were
+// knowable from this file and nowhere an agent could read. Measured on real
+// generations, agents guessed -- `textarea` for long text, snake_case for ids --
+// and the API refused briefs that were wrong about a vocabulary nobody published.
+//
+// Keyed by kind rather than listed, so a new arm of FieldSpec fails to compile
+// until it is described here. A vocabulary that can drift from the validator is
+// the bug this exists to close.
+export const FIELD_KINDS: Record<FieldSpec["kind"], { summary: string; attributes: string }> = {
+  text: {
+    summary: "Free text. There is no separate textarea kind; a multi-line box is `long: true`.",
+    attributes: "long?: boolean for a multi-line box, maxLength?: number",
+  },
+  number: { summary: "A number.", attributes: "min?: number, max?: number" },
+  boolean: { summary: "Yes or no, rendered as a pair of radios.", attributes: "none" },
+  choice: {
+    summary: "One of a fixed set, or several when multiple is true.",
+    attributes: "options: {value,label}[] (required), multiple: boolean (required)",
+  },
+  rating: { summary: "A whole number on a scale starting at 1.", attributes: "scale: number (required)" },
+};
+
+// Every kind takes these; the table above lists only what is particular to it.
+export const FIELD_COMMON = "kind, id, label, required — and help? for a line of guidance under the label";
+
 // An answer is the narrowest thing that survives a round trip through an HTML
 // form and a JSON column. Everything richer is a composition of these.
 export type Answer = string | number | boolean | string[];

@@ -22,6 +22,9 @@ COPY client ./client
 # The mascot, served by the landing page. Only the web-sized variants: the
 # full-resolution source art is repository history, not something to ship.
 COPY assets/mascot-light.png assets/mascot-dark.png ./assets/
+# The written report behind /bench. The runs it is drawn from stay in the
+# repository for anyone checking the arithmetic; the service only serves the page.
+COPY bench/report.html ./bench/report.html
 
 USER node
 EXPOSE 8080

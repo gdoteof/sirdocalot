@@ -1,0 +1,114 @@
+{
+  "brief-1": {
+    "transcript": "/home/geoff/.claude/projects/-home-geoff-claude-sirdocalot/ad1684cc-c2b3-49bf-87c4-3387ecef5d7d/subagents/agent-ac077a84f0db9a7a4.jsonl",
+    "assistantTurns": 4,
+    "outputTokens": 5901,
+    "thinkingTokens": 2404,
+    "documentTokens": 3497,
+    "contextAtStart": 219172,
+    "contextAtEnd": 224310,
+    "peakContext": 224310,
+    "cacheCreationTokens": 7134,
+    "uncachedInputTokens": 8,
+    "toolCalls": [
+      "Agent",
+      "Bash"
+    ],
+    "contextGrowth": 5138
+  },
+  "artifact-1": {
+    "transcript": "/home/geoff/.claude/projects/-home-geoff-claude-sirdocalot/ad1684cc-c2b3-49bf-87c4-3387ecef5d7d/subagents/agent-a17d02a7ea066b0c5.jsonl",
+    "assistantTurns": 7,
+    "outputTokens": 13922,
+    "thinkingTokens": 5660,
+    "documentTokens": 8262,
+    "contextAtStart": 219172,
+    "contextAtEnd": 236479,
+    "peakContext": 236479,
+    "cacheCreationTokens": 24640,
+    "uncachedInputTokens": 14,
+    "toolCalls": [
+      "Agent",
+      "Skill",
+      "Write",
+      "Artifact"
+    ],
+    "contextGrowth": 17307
+  },
+  "brief-2": {
+    "transcript": "/home/geoff/.claude/projects/-home-geoff-claude-sirdocalot/ad1684cc-c2b3-49bf-87c4-3387ecef5d7d/subagents/agent-a861e2050a7f42257.jsonl",
+    "assistantTurns": 4,
+    "outputTokens": 4094,
+    "thinkingTokens": 900,
+    "documentTokens": 3194,
+    "contextAtStart": 226827,
+    "contextAtEnd": 231587,
+    "peakContext": 231587,
+    "cacheCreationTokens": 6132,
+    "uncachedInputTokens": 8,
+    "toolCalls": [
+      "Agent",
+      "Bash"
+    ],
+    "contextGrowth": 4760
+  },
+  "artifact-2": {
+    "transcript": "/home/geoff/.claude/projects/-home-geoff-claude-sirdocalot/ad1684cc-c2b3-49bf-87c4-3387ecef5d7d/subagents/agent-a99b4d73db5bb7110.jsonl",
+    "assistantTurns": 12,
+    "outputTokens": 20334,
+    "thinkingTokens": 8800,
+    "documentTokens": 11534,
+    "contextAtStart": 226827,
+    "contextAtEnd": 250940,
+    "peakContext": 250940,
+    "cacheCreationTokens": 28881,
+    "uncachedInputTokens": 24,
+    "toolCalls": [
+      "Agent",
+      "Skill",
+      "Bash",
+      "Bash",
+      "Write",
+      "Artifact"
+    ],
+    "contextGrowth": 24113
+  },
+  "brief-3": {
+    "transcript": "/home/geoff/.claude/projects/-home-geoff-claude-sirdocalot/ad1684cc-c2b3-49bf-87c4-3387ecef5d7d/subagents/agent-adc35eeea6230e8ea.jsonl",
+    "assistantTurns": 6,
+    "outputTokens": 6879,
+    "thinkingTokens": 2466,
+    "documentTokens": 4413,
+    "contextAtStart": 226827,
+    "contextAtEnd": 232502,
+    "peakContext": 232502,
+    "cacheCreationTokens": 8758,
+    "uncachedInputTokens": 12,
+    "toolCalls": [
+      "Agent",
+      "Bash",
+      "Bash"
+    ],
+    "contextGrowth": 5675
+  },
+  "artifact-3": {
+    "transcript": "/home/geoff/.claude/projects/-home-geoff-claude-sirdocalot/ad1684cc-c2b3-49bf-87c4-3387ecef5d7d/subagents/agent-a3f5e26fdef98a766.jsonl",
+    "assistantTurns": 10,
+    "outputTokens": 18814,
+    "thinkingTokens": 8930,
+    "documentTokens": 9884,
+    "contextAtStart": 226827,
+    "contextAtEnd": 246759,
+    "peakContext": 246759,
+    "cacheCreationTokens": 34753,
+    "uncachedInputTokens": 20,
+    "toolCalls": [
+      "Agent",
+      "Skill",
+      "Bash",
+      "Write",
+      "Artifact"
+    ],
+    "contextGrowth": 19932
+  }
+}

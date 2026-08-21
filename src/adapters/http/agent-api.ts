@@ -11,8 +11,9 @@ import { authenticate } from "../../application/authenticate.ts";
 import { registerAgent } from "../../application/register-agent.ts";
 import { registerAgentSchema, inviteSchema } from "./schemas.ts";
 import type { Json } from "../../domain/json.ts";
-import { briefId } from "../../domain/ids.ts";
+import { briefId, ID_RULE } from "../../domain/ids.ts";
 import { fieldsOf } from "../../domain/primitives.ts";
+import { FIELD_COMMON, FIELD_KINDS } from "../../domain/fields.ts";
 import type { Coalesced } from "../../domain/response.ts";
 import { createBrief } from "../../application/create-brief.ts";
 import { closeManually, readResults } from "../../application/read-results.ts";
@@ -171,6 +172,15 @@ export function agentApi(deps: Deps, renderers: { artifact: Renderer }, config: 
     const widgets = await deps.widgets.list();
     return c.json({
       widgets: widgets.map((w) => ({ name: w.name, summary: w.summary, props: w.props })),
+      // Half the vocabulary used to be missing here. Widget props say a question
+      // is "a field spec" without saying what one is, so an agent composing a
+      // survey had to guess the kinds and the id format -- and guessed wrong on
+      // two of three measured generations.
+      fields: {
+        idRule: ID_RULE,
+        common: FIELD_COMMON,
+        kinds: Object.entries(FIELD_KINDS).map(([kind, d]) => ({ kind, ...d })),
+      },
     });
   });
 

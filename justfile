@@ -68,6 +68,15 @@ smoke:
 agent-smoke:
     ./scripts/agent-smoke.sh
 
+# Rewrites bench/results/runs/. Needs the `claude` CLI signed in, and spends real
+# tokens -- eighteen generations by default. This is the narrower of the two
+# experiments in bench/; the one behind /bench is run from a session, not here.
+#
+# Compare emitting a brief against authoring a page, from a cold prompt.
+bench repeats="3" model="opus":
+    node --experimental-strip-types bench/run.mjs --repeats {{repeats}} --model {{model}}
+    node --experimental-strip-types bench/summarize.mjs
+
 # Build the image and load it into a k3s node's containerd.
 #
 # There is no registry in the cluster this was built for, so the image is carried

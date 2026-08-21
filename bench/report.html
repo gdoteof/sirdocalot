@@ -1,0 +1,453 @@
+<title>What Handing Over Costs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+  :root {
+    --ground:    #EDF0F4;
+    --surface:   #F7F9FB;
+    --sunk:      #E3E8EE;
+    --ink:       #131A22;
+    --ink-soft:  #55606D;
+    --ink-faint: #7C8794;
+    --rule:      #D5DBE3;
+    --brief:     #0A6FD0;
+    --page:      #A8641E;
+    --brief-wash:#0A6FD014;
+    --page-wash: #A8641E14;
+
+    --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #12171B;
+      --surface:   #191F25;
+      --sunk:      #0D1216;
+      --ink:       #E4E9EF;
+      --ink-soft:  #98A3AF;
+      --ink-faint: #78838F;
+      --rule:      #2A323A;
+      --brief:     #4E92E4;
+      --page:      #C87F33;
+      --brief-wash:#4E92E41F;
+      --page-wash: #C87F331F;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:    #12171B;
+    --surface:   #191F25;
+    --sunk:      #0D1216;
+    --ink:       #E4E9EF;
+    --ink-soft:  #98A3AF;
+    --ink-faint: #78838F;
+    --rule:      #2A323A;
+    --brief:     #4E92E4;
+    --page:      #C87F33;
+    --brief-wash:#4E92E41F;
+    --page-wash: #C87F331F;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 1.0625rem/1.65 var(--body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.75rem;
+  }
+
+  .eyebrow {
+    font: 600 0.7rem/1 var(--mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0;
+  }
+
+  h1 {
+    font: 700 clamp(2.1rem, 6vw, 3.1rem)/1.05 var(--display);
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    margin: 0.7rem 0 0;
+  }
+
+  h2 {
+    font: 700 1.35rem/1.2 var(--display);
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0 0 0.5rem;
+  }
+
+  h3 {
+    font: 700 1rem/1.25 var(--display);
+    letter-spacing: -0.005em;
+    margin: 0;
+  }
+
+  p { margin: 0 0 1rem; }
+  p:last-child { margin-bottom: 0; }
+
+  .standfirst {
+    font-size: 1.2rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin: 1rem 0 0;
+    max-width: 34rem;
+  }
+
+  section { display: flex; flex-direction: column; gap: 0.9rem; }
+
+  .rule { border: 0; border-top: 1px solid var(--rule); margin: 0; }
+
+  /* The prompts, shown as they were given: shared text, the one sentence that
+     differed, shared text. The shape of the block is the design of the test. */
+  .prompts {
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--surface);
+    font: 400 0.86rem/1.6 var(--mono);
+    overflow: hidden;
+  }
+  .prompts > div { padding: 0.85rem 1rem; }
+  .prompts .shared { color: var(--ink-soft); }
+  .prompts .split { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--rule); padding: 0; border-block: 1px solid var(--rule); }
+  @media (min-width: 40rem) { .prompts .split { grid-template-columns: 1fr 1fr; } }
+  .prompts .split > div { padding: 0.85rem 1rem; }
+  .prompts .split .b { background: var(--brief-wash); color: var(--brief); }
+  .prompts .split .p { background: var(--page-wash); color: var(--page); }
+  .prompts .who {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    margin-bottom: 0.35rem;
+  }
+
+  /* The three ratios. Stat tiles, not a chart: six runs is not enough data to
+     plot, and a plotted ratio invites a precision it has not got. */
+  .tiles {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  @media (min-width: 34rem) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+
+  .tile { background: var(--surface); padding: 1.15rem 1.2rem 1.25rem; }
+  .tile .n {
+    font: 500 2.5rem/1 var(--display);
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--brief);
+  }
+  .tile .n span { font-size: 1.35rem; letter-spacing: 0; color: var(--ink-faint); }
+  .tile .k {
+    font: 500 0.72rem/1 var(--mono);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0.55rem 0 0;
+  }
+  .tile .d { font-size: 0.86rem; line-height: 1.45; color: var(--ink-soft); margin: 0.4rem 0 0; }
+
+  /* The two paths. Colour is identity and is carried everywhere; the chain of
+     steps is itself the finding. */
+  .paths { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  @media (min-width: 40rem) { .paths { grid-template-columns: 1fr 1fr; } }
+
+  .path {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1.1rem 1.15rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    min-width: 0;
+  }
+  .path--brief { border-top: 3px solid var(--brief); }
+  .path--page  { border-top: 3px solid var(--page); }
+
+  .path .who { display: flex; align-items: baseline; gap: 0.5rem; }
+  .path .dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; flex: none; }
+  .path--brief .dot { background: var(--brief); }
+  .path--page .dot  { background: var(--page); }
+
+  .chainwrap { display: flex; flex-direction: column; gap: 0.35rem; }
+  .chainlabel {
+    font: 500 0.66rem/1 var(--mono);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
+  .step {
+    font: 500 0.72rem/1 var(--mono);
+    padding: 0.35rem 0.45rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .arrow { font: 400 0.7rem/1 var(--mono); color: var(--ink-faint); }
+  .path--brief .step { background: var(--brief-wash); color: var(--brief); }
+  .path--page .step  { background: var(--page-wash);  color: var(--page); }
+
+  .figures { display: flex; flex-direction: column; gap: 0.3rem; margin: 0; }
+  .figures div { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.87rem; }
+  .figures dt { color: var(--ink-soft); }
+  .figures dd {
+    margin: 0;
+    font: 500 0.87rem/1.5 var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  /* Tables. Rows are grouped by measure so units never change inside a block. */
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  th, td { text-align: right; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    font: 500 0.68rem/1.3 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    border-bottom: 1px solid var(--ink-faint);
+    white-space: nowrap;
+  }
+  tbody td { font-variant-numeric: tabular-nums; font-family: var(--mono); color: var(--ink); }
+  tbody th {
+    text-align: left;
+    font: 400 0.88rem/1.5 var(--body);
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  tbody tr.group th {
+    font: 700 0.78rem/1.4 var(--display);
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    padding-top: 1.1rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  tbody tr.group:first-child th { padding-top: 0.5rem; }
+  tbody th .swatch {
+    display: inline-block;
+    width: 0.5rem; height: 0.5rem;
+    border-radius: 50%;
+    margin-right: 0.45rem;
+    vertical-align: 0.05em;
+  }
+  .sw-brief { background: var(--brief); }
+  .sw-page  { background: var(--page); }
+  tr.ratio td, tr.ratio th { color: var(--ink-faint); }
+  tr.ratio td { font-weight: 500; }
+
+  /* Links out to the surviving outputs */
+  .links { display: flex; flex-direction: column; gap: 0.7rem; margin: 0; }
+  .linkrow { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 0.6rem; font-size: 0.85rem; }
+  .linkrow .tag {
+    font: 500 0.68rem/1 var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.4rem;
+    border-radius: 2px;
+    flex: none;
+  }
+  .tag--brief { background: var(--brief-wash); color: var(--brief); }
+  .tag--page  { background: var(--page-wash);  color: var(--page); }
+  a { color: var(--brief); text-underline-offset: 0.16em; overflow-wrap: anywhere; }
+  .home { color: inherit; text-decoration: none; border-bottom: 1px solid currentColor; }
+  .home:hover { color: var(--brief); }
+  a:focus-visible { outline: 2px solid var(--brief); outline-offset: 2px; border-radius: 2px; }
+
+  .aside {
+    background: var(--sunk);
+    border-left: 3px solid var(--page);
+    border-radius: 0 3px 3px 0;
+    padding: 1rem 1.15rem;
+  }
+  .aside p:last-child { margin-bottom: 0; }
+
+  ul.notes { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+  ul.notes li { color: var(--ink-soft); }
+  ul.notes strong { color: var(--ink); }
+
+  .fine { font-size: 0.85rem; color: var(--ink-faint); margin: 0; }
+
+  code {
+    font: 500 0.88em var(--mono);
+    background: var(--sunk);
+    padding: 0.1em 0.3em;
+    border-radius: 2px;
+  }
+
+  footer { font-size: 0.85rem; color: var(--ink-faint); }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow"><a class="home" href="https://sirdocalot.vteng.io/">sirdocalot</a> &middot; measured 20 August 2026 &middot; Opus 5</p>
+    <h1>What handing over costs</h1>
+    <p class="standfirst">Comparing generating a brief with Sir DocAlot against generating an artifact with Claude Code.</p>
+  </header>
+
+  <hr class="rule">
+
+  <section>
+    <h2>The experiment</h2>
+    <p>A Claude Code session had been working in this repository for a few hours &mdash; reading files, running tests, changing code. The work was finished and needed to go to a person.</p>
+    <p>We forked that session twice. Both forks inherited the same 219,172 tokens of context, so the only thing separating them was the instruction, and the instructions differed by a single sentence.</p>
+
+    <div class="prompts">
+      <div class="shared">Hand the current state of this benchmark work to the operator, so they can read it at their own pace rather than out of this transcript &mdash; what was measured, what was found, what is still open, and what needs their decision.</div>
+      <div class="split">
+        <div class="b"><span class="who">Fork A</span>Use sirdocalot: create a brief for them.</div>
+        <div class="p"><span class="who">Fork B</span>Produce it as a published Claude artifact they can open at a link.</div>
+      </div>
+      <div class="shared">When you are done, reply with only the URL and nothing else.</div>
+    </div>
+
+    <p>Three pairs ran that way. Every fork published something a person can open, and neither was told how much effort to spend.</p>
+  </section>
+
+  <section>
+    <h2>What the brief saved</h2>
+    <p class="fine">Fork A measured against fork B, median of the three pairs. Every figure is the brief costing less.</p>
+    <div class="tiles">
+      <div class="tile">
+        <div class="n">58<span>%</span></div>
+        <p class="k">Fewer tokens written</p>
+        <p class="d">Output tokens, thinking excluded &mdash; 2.4&times; less. Range across pairs: 55% to 72%.</p>
+      </div>
+      <div class="tile">
+        <div class="n">72<span>%</span></div>
+        <p class="k">Less context added</p>
+        <p class="d">What the handover left behind in the session that ran it &mdash; 3.5&times; less.</p>
+      </div>
+      <div class="tile">
+        <div class="n">65<span>%</span></div>
+        <p class="k">Less time waiting</p>
+        <p class="d">Wall clock, from the instruction to a published link &mdash; 2.9&times; less.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What each fork did</h2>
+    <div class="paths">
+      <div class="path path--brief">
+        <div class="who"><span class="dot"></span><h3>Fork A &mdash; brief</h3></div>
+        <div class="chainwrap">
+          <span class="chainlabel">1 tool call</span>
+          <div class="chain"><span class="step">Bash</span></div>
+        </div>
+        <dl class="figures">
+          <div><dt>Tokens written</dt><dd>3,497</dd></div>
+          <div><dt>Context added</dt><dd>5,138</dd></div>
+          <div><dt>Turns</dt><dd>4</dd></div>
+          <div><dt>Wall clock</dt><dd>61s</dd></div>
+        </dl>
+      </div>
+
+      <div class="path path--page">
+        <div class="who"><span class="dot"></span><h3>Fork B &mdash; artifact</h3></div>
+        <div class="chainwrap">
+          <span class="chainlabel">3 tool calls</span>
+          <div class="chain">
+            <span class="step">Skill</span><span class="arrow">&rarr;</span>
+            <span class="step">Write</span><span class="arrow">&rarr;</span>
+            <span class="step">Artifact</span>
+          </div>
+        </div>
+        <dl class="figures">
+          <div><dt>Tokens written</dt><dd>8,262</dd></div>
+          <div><dt>Context added</dt><dd>17,307</dd></div>
+          <div><dt>Turns</dt><dd>7</dd></div>
+          <div><dt>Wall clock</dt><dd>161s</dd></div>
+        </dl>
+      </div>
+    </div>
+    <p class="fine">Pair one. Fork B loaded a design skill without being asked to; nothing in either prompt mentioned design.</p>
+  </section>
+
+  <section>
+    <h2>All three pairs</h2>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>&nbsp;</th><th>Pair 1</th><th>Pair 2</th><th>Pair 3</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group"><th colspan="4">Tokens written</th></tr>
+          <tr><th><span class="swatch sw-brief"></span>Brief</th><td>3,497</td><td>3,194</td><td>4,413</td></tr>
+          <tr><th><span class="swatch sw-page"></span>Artifact</th><td>8,262</td><td>11,534</td><td>9,884</td></tr>
+          <tr class="ratio"><th>Ratio</th><td>2.36&times;</td><td>3.61&times;</td><td>2.24&times;</td></tr>
+
+          <tr class="group"><th colspan="4">Context added</th></tr>
+          <tr><th><span class="swatch sw-brief"></span>Brief</th><td>5,138</td><td>4,760</td><td>5,675</td></tr>
+          <tr><th><span class="swatch sw-page"></span>Artifact</th><td>17,307</td><td>24,113</td><td>19,932</td></tr>
+          <tr class="ratio"><th>Ratio</th><td>3.37&times;</td><td>5.07&times;</td><td>3.51&times;</td></tr>
+
+          <tr class="group"><th colspan="4">Wall clock</th></tr>
+          <tr><th><span class="swatch sw-brief"></span>Brief</th><td>61s</td><td>59s</td><td>66s</td></tr>
+          <tr><th><span class="swatch sw-page"></span>Artifact</th><td>161s</td><td>232s</td><td>189s</td></tr>
+          <tr class="ratio"><th>Ratio</th><td>2.63&times;</td><td>3.95&times;</td><td>2.88&times;</td></tr>
+
+          <tr class="group"><th colspan="4">Tool calls</th></tr>
+          <tr><th><span class="swatch sw-brief"></span>Brief</th><td>1</td><td>1</td><td>2</td></tr>
+          <tr><th><span class="swatch sw-page"></span>Artifact</th><td>3</td><td>5</td><td>4</td></tr>
+
+          <tr class="group"><th colspan="4">Turns</th></tr>
+          <tr><th><span class="swatch sw-brief"></span>Brief</th><td>4</td><td>4</td><td>6</td></tr>
+          <tr><th><span class="swatch sw-page"></span>Artifact</th><td>7</td><td>12</td><td>10</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <dl class="links">
+      <div class="linkrow"><span class="tag tag--brief">Pair 1 &middot; brief</span><a href="https://sirdocalot.vteng.io/r/qsf28b2enmpn">sirdocalot.vteng.io/r/qsf28b2enmpn</a></div>
+      <div class="linkrow"><span class="tag tag--brief">Pair 2 &middot; brief</span><a href="https://sirdocalot.vteng.io/r/2ttyff4t834b">sirdocalot.vteng.io/r/2ttyff4t834b</a></div>
+      <div class="linkrow"><span class="tag tag--brief">Pair 3 &middot; brief</span><a href="https://sirdocalot.vteng.io/r/fdj8z6q534r2">sirdocalot.vteng.io/r/fdj8z6q534r2</a></div>
+      <div class="linkrow"><span class="tag tag--page">Pair 3 &middot; artifact</span><a href="https://claude.ai/code/artifact/b2020591-0413-45f8-ab30-1824fec10f72">claude.ai/code/artifact/b2020591&hellip;</a></div>
+    </dl>
+    <p class="fine">Two artifact links are missing for the same reason: publishing an artifact from a session updates that session's artifact rather than making a second one. Pair 2's fork republished over pair 1's, and this page was later published over the same one. The numbers come from the transcripts, not the artifacts, so they are unaffected.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2>What this does not claim</h2>
+    <ul class="notes">
+      <li><strong>Not that briefs look better.</strong> The published artifacts pick their own typography and lay out for their own content. A brief never will &mdash; every brief comes out looking like every other brief. That is the trade, and for something read once it is usually the right one.</li>
+      <li><strong>Not a design comparison.</strong> Nothing here competes on bespoke design that draws its elements from the content it presents. A fixed vocabulary of widgets cannot do that and is not trying to.</li>
+      <li><strong>Three pairs, one model, one kind of document.</strong> Pairs two and three inherited a context that already named pair one's output. Pair one is the only fully naive pair, and it is also the narrowest result, at 2.36&times;.</li>
+      <li><strong>Not free.</strong> A brief costs a round trip to a service that has to be running, and a vocabulary in context. An artifact costs neither.</li>
+    </ul>
+  </section>
+
+  <hr class="rule">
+
+  <footer>
+    <p>Token counts are read out of each fork's own transcript, which records usage per message, so the arithmetic can be recomputed rather than believed. The runs and the harness are in the repository under <code>bench/</code>.</p>
+  </footer>
+
+</div>

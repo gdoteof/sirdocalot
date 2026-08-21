@@ -3,6 +3,8 @@
 // Nothing inward of here names an implementation, which is what makes the two
 // render targets interchangeable and the stores swappable in tests.
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { loadConfig } from "./config.ts";
@@ -25,6 +27,19 @@ import { onboarding } from "./adapters/http/onboarding.ts";
 import { landing } from "./adapters/http/landing.ts";
 
 const config = loadConfig();
+
+// The benchmark report, if this checkout has one. Absent is a normal state -- a
+// fresh clone need not carry one -- and the front page adapts rather than linking
+// at a page that would have nothing to show. It is served as written: the same
+// file is published as an artifact, and rendering it a second way here would be
+// two implementations to keep agreeing.
+const benchReport = ((): string | null => {
+  try {
+    return readFileSync(join(import.meta.dirname, "../bench/report.html"), "utf8");
+  } catch {
+    return null;
+  }
+})();
 const db = connect(config.databaseUrl, config.databaseSchema);
 
 const ran = await migrate(db, config.databaseSchema);
@@ -75,7 +90,13 @@ app.route(
     },
   ),
 );
-app.route("/", landing(config.baseUrl, galleryPage(config.baseUrl)));
+app.route(
+  "/",
+  landing(config.baseUrl, {
+    gallery: galleryPage(config.baseUrl),
+    bench: benchReport,
+  }),
+);
 app.route("/", onboarding(config.baseUrl));
 app.route("/", participantApp(deps, hostedRenderer()));
 

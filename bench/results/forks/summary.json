@@ -1,0 +1,192 @@
+{
+  "experiment": "one session forked twice, each fork asked to hand the same work to a person",
+  "model": "claude-opus-5",
+  "pairs": [
+    {
+      "pair": 1,
+      "baseContext": 219172,
+      "ratios": {
+        "outputTokens": 2.36,
+        "documentTokens": 2.36,
+        "contextGrowth": 3.37,
+        "duration": 2.63
+      }
+    },
+    {
+      "pair": 2,
+      "baseContext": 226827,
+      "ratios": {
+        "outputTokens": 4.97,
+        "documentTokens": 3.61,
+        "contextGrowth": 5.07,
+        "duration": 3.95
+      }
+    },
+    {
+      "pair": 3,
+      "baseContext": 226827,
+      "ratios": {
+        "outputTokens": 2.73,
+        "documentTokens": 2.24,
+        "contextGrowth": 3.51,
+        "duration": 2.88
+      }
+    }
+  ],
+  "runs": {
+    "brief-1": {
+      "assistantTurns": 4,
+      "outputTokens": 5901,
+      "thinkingTokens": 2404,
+      "documentTokens": 3497,
+      "contextAtStart": 219172,
+      "contextAtEnd": 224310,
+      "peakContext": 224310,
+      "cacheCreationTokens": 7134,
+      "uncachedInputTokens": 8,
+      "toolCalls": [
+        "Agent",
+        "Bash"
+      ],
+      "contextGrowth": 5138,
+      "url": "https://sirdocalot.vteng.io/r/qsf28b2enmpn",
+      "durationMs": 61357,
+      "sessionTokens": 224315,
+      "base": 219172
+    },
+    "artifact-1": {
+      "assistantTurns": 7,
+      "outputTokens": 13922,
+      "thinkingTokens": 5660,
+      "documentTokens": 8262,
+      "contextAtStart": 219172,
+      "contextAtEnd": 236479,
+      "peakContext": 236479,
+      "cacheCreationTokens": 24640,
+      "uncachedInputTokens": 14,
+      "toolCalls": [
+        "Agent",
+        "Skill",
+        "Write",
+        "Artifact"
+      ],
+      "contextGrowth": 17307,
+      "url": "https://claude.ai/code/artifact/17d022e9-2594-4d35-9a78-e9e917d3d33d",
+      "durationMs": 161386,
+      "sessionTokens": 236511,
+      "base": 219172,
+      "note": "This URL was later republished over by the write-up of the experiment. Publishing an artifact from a session updates that session's artifact rather than creating a second one. The original output survives only in the artifact's version history."
+    },
+    "brief-2": {
+      "assistantTurns": 4,
+      "outputTokens": 4094,
+      "thinkingTokens": 900,
+      "documentTokens": 3194,
+      "contextAtStart": 226827,
+      "contextAtEnd": 231587,
+      "peakContext": 231587,
+      "cacheCreationTokens": 6132,
+      "uncachedInputTokens": 8,
+      "toolCalls": [
+        "Agent",
+        "Bash"
+      ],
+      "contextGrowth": 4760,
+      "url": "https://sirdocalot.vteng.io/r/2ttyff4t834b",
+      "durationMs": 58587,
+      "sessionTokens": 231592,
+      "base": 226827
+    },
+    "artifact-2": {
+      "assistantTurns": 12,
+      "outputTokens": 20334,
+      "thinkingTokens": 8800,
+      "documentTokens": 11534,
+      "contextAtStart": 226827,
+      "contextAtEnd": 250940,
+      "peakContext": 250940,
+      "cacheCreationTokens": 28881,
+      "uncachedInputTokens": 24,
+      "toolCalls": [
+        "Agent",
+        "Skill",
+        "Bash",
+        "Bash",
+        "Write",
+        "Artifact"
+      ],
+      "contextGrowth": 24113,
+      "url": "https://claude.ai/code/artifact/17d022e9-2594-4d35-9a78-e9e917d3d33d",
+      "durationMs": 231671,
+      "sessionTokens": 250980,
+      "base": 226827,
+      "note": "Updated the artifact pair 1 published rather than creating its own: this fork inherited a context that already named it."
+    },
+    "brief-3": {
+      "assistantTurns": 6,
+      "outputTokens": 6879,
+      "thinkingTokens": 2466,
+      "documentTokens": 4413,
+      "contextAtStart": 226827,
+      "contextAtEnd": 232502,
+      "peakContext": 232502,
+      "cacheCreationTokens": 8758,
+      "uncachedInputTokens": 12,
+      "toolCalls": [
+        "Agent",
+        "Bash",
+        "Bash"
+      ],
+      "contextGrowth": 5675,
+      "url": "https://sirdocalot.vteng.io/r/fdj8z6q534r2",
+      "durationMs": 65640,
+      "sessionTokens": 232513,
+      "base": 226827
+    },
+    "artifact-3": {
+      "assistantTurns": 10,
+      "outputTokens": 18814,
+      "thinkingTokens": 8930,
+      "documentTokens": 9884,
+      "contextAtStart": 226827,
+      "contextAtEnd": 246759,
+      "peakContext": 246759,
+      "cacheCreationTokens": 34753,
+      "uncachedInputTokens": 20,
+      "toolCalls": [
+        "Agent",
+        "Skill",
+        "Bash",
+        "Write",
+        "Artifact"
+      ],
+      "contextGrowth": 19932,
+      "url": "https://claude.ai/code/artifact/b2020591-0413-45f8-ab30-1824fec10f72",
+      "durationMs": 189229,
+      "sessionTokens": 246796,
+      "base": 226827
+    }
+  },
+  "overall": {
+    "outputTokens": {
+      "median": 2.73,
+      "min": 2.36,
+      "max": 4.97
+    },
+    "documentTokens": {
+      "median": 2.36,
+      "min": 2.24,
+      "max": 3.61
+    },
+    "contextGrowth": {
+      "median": 3.51,
+      "min": 3.37,
+      "max": 5.07
+    },
+    "duration": {
+      "median": 2.88,
+      "min": 2.63,
+      "max": 3.95
+    }
+  }
+}

@@ -31,6 +31,36 @@ Anything that pushes agents back toward writing markup has broken the bet. There
 is an escape hatch — a sandboxed `raw` block — and it is deliberately the last
 resort, not the fast path.
 
+### What that is worth, measured
+
+One session was forked twice and each fork given the same instruction, differing
+only in how to hand the work over. A fork inherits its parent's context exactly,
+so the difference between the two runs is the cost of the medium and nothing else.
+Both ends of every pair published a real link. Three pairs, on Opus 5 — one of
+them, in full:
+
+| | Compose a brief | Author and publish a page |
+| --- | --- | --- |
+| Tokens written | 3,497 | 8,262 |
+| Context added to the session | 5,138 | 17,307 |
+| Tool calls | 1 | 3 |
+| Turns | 4 | 7 |
+| Wall clock | 61s | 161s |
+
+Medians across the three pairs: **2.4× the output, 3.5× the context, 2.9× the
+wait.** The publishing path loads a design skill, writes a file, publishes it, and
+carries the whole page back through the transcript. The brief path makes one call.
+
+Every figure above, all three pairs, and what the comparison does not claim:
+[**sirdocalot.vteng.io/bench**](https://sirdocalot.vteng.io/bench).
+
+The saving is in the path, not in the markup. Compare the two *generations* alone
+— emit this as JSON, emit this as HTML — and the gap is close to nothing on a
+document that is mostly prose, because both write the same words and only one also
+writes the tags around them.
+
+The runs and the harness are in [`bench/`](bench/README.md).
+
 ## Running it
 
 ```

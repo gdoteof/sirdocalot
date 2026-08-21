@@ -17,11 +17,22 @@ import { BUILTIN_WIDGETS } from "../../domain/builtin-widgets.ts";
 // branch name, so renaming the default branch does not leave a 404 here.
 const REPO = "https://github.com/gdoteof/sirdocalot";
 
-export function landing(baseUrl: string, gallery: string): Hono {
+// `bench` is null on a checkout that has no report. The route and the link to it
+// appear together or not at all, so the front page cannot offer evidence this
+// deployment does not have.
+export function landing(baseUrl: string, pages: { gallery: string; bench: string | null }): Hono {
   const app = new Hono();
+  // A fresh header object per response. Hono takes ownership of the one it is
+  // given, so a shared constant serves the first request and breaks every one
+  // after it.
+  const html = (): Record<string, string> => ({ "content-type": "text/html; charset=utf-8" });
 
-  app.get("/", (c) => c.body(page(baseUrl), 200, { "content-type": "text/html; charset=utf-8" }));
-  app.get("/widgets", (c) => c.body(gallery, 200, { "content-type": "text/html; charset=utf-8" }));
+  app.get("/", (c) => c.body(page(baseUrl, pages.bench !== null), 200, html()));
+  app.get("/widgets", (c) => c.body(pages.gallery, 200, html()));
+  if (pages.bench !== null) {
+    const bench = pages.bench;
+    app.get("/bench", (c) => c.body(bench, 200, html()));
+  }
 
   // Read once at start-up, not per request. They never change between deploys,
   // and this box serves them down a tunnel from a domestic connection -- the
@@ -93,7 +104,7 @@ function widgetList(): string {
   ).join("");
 }
 
-function page(baseUrl: string): string {
+function page(baseUrl: string, hasBench: boolean): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -168,7 +179,11 @@ function page(baseUrl: string): string {
         ] } }
   ]
 }</code></pre>
-  <p class="caption">Roughly 20 to 50 times fewer tokens than writing the equivalent page by hand, and it comes out the same every time.</p>
+  <p class="caption">Roughly 2.4 times fewer tokens than authoring and publishing the equivalent page, and it comes out the same every time.${
+    hasBench
+      ? ` <a href="${baseUrl}/bench">Measured</a> — one session forked twice, asked to hand the same work over both ways.`
+      : ""
+  }</p>
 
   <h2 class="h">What the person opens</h2>
   <p class="prose">One short link per participant:</p>

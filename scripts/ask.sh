@@ -6,7 +6,7 @@
 #
 #   ./scripts/ask.sh new brief.json     create a brief, print the links
 #   ./scripts/ask.sh read <id>          what has come back so far
-#   ./scripts/ask.sh wait <id> [secs]   hold until collection closes
+#   ./scripts/ask.sh wait <id> [secs]   hold until collection closes, or [secs] elapse
 set -eu
 
 BASE="${SIRDOCALOT_URL:-https://sirdocalot.vteng.io}"
@@ -20,7 +20,10 @@ usage() { echo "usage: $0 {new <file.json>|read <id>|wait <id> [seconds]}" >&2; 
 case "$1" in
   new)
     [ $# -eq 2 ] || usage
-    curl -fsS -X POST "$BASE/api/briefs" -H "$AUTH" -H "Content-Type: application/json" \
+    # No -f: a refused brief answers 400 with the field-by-field reason, and -f
+    # would exit on the status before the body reached the reader below that
+    # exists to print it. The reader distinguishes refusal from success itself.
+    curl -sS -X POST "$BASE/api/briefs" -H "$AUTH" -H "Content-Type: application/json" \
       -d @"$2" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
@@ -41,10 +44,23 @@ if not d["invitations"]:
     ;;
   wait)
     [ $# -ge 2 ] || usage
-    # Bounded by the server's own ceiling; a timed-out wait is a legitimate
-    # outcome, not an error, and comes back with whatever has arrived.
-    curl -fsS -H "$AUTH" "$BASE/api/briefs/$2/await?timeout_ms=$(( ${3:-300} * 1000 ))" \
-      | python3 -m json.tool
+    # One poll is capped at the server's MAX_AWAIT_MS -- 90 seconds by default,
+    # because Cloudflare kills an origin response at about 100 -- so a single
+    # request cannot honour a longer wait. It comes back `timedOut` instead,
+    # which exits 0 and reads exactly like a finished wait. Looping is what makes
+    # the documented "hold until collection closes" true.
+    deadline=$(( $(date +%s) + ${3:-300} ))
+    while :; do
+      out=$(curl -fsS -H "$AUTH" "$BASE/api/briefs/$2/await?timeout_ms=90000")
+      if echo "$out" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["closed"] else 1)'; then
+        echo "$out" | python3 -m json.tool
+        exit 0
+      fi
+      if [ "$(date +%s)" -ge "$deadline" ]; then
+        echo "$out" | python3 -m json.tool
+        exit 0
+      fi
+    done
     ;;
   *) usage ;;
 esac
