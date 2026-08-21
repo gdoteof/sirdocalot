@@ -111,7 +111,14 @@ input[type=text]:focus, input[type=number]:focus, textarea:focus {
 textarea { resize: vertical; }
 .choices { display: grid; gap: .4rem; }
 .check { display: flex; align-items: flex-start; gap: .5rem; cursor: pointer; }
-.check input { margin-top: .35rem; }
+.check input { margin-top: .35rem; accent-color: var(--accent); }
+/* A disabled control still has to say what it holds. A respondent reading their
+   own answers back sees every choice disabled, and the native rendering of
+   checked-and-disabled is grey against unchecked grey -- so the label carries
+   the state instead of the box, the way a rating pip already does. */
+.check input:disabled { cursor: default; }
+.check input:disabled + span { color: var(--ink-faint); }
+.check input:checked:disabled + span { color: var(--accent); font-weight: 600; }
 .rating { display: flex; gap: .4rem; flex-wrap: wrap; }
 .pip { cursor: pointer; }
 .pip input { position: absolute; opacity: 0; width: 0; height: 0; }

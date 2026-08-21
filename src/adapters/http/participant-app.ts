@@ -24,6 +24,23 @@ export function participantApp(deps: Deps, renderer: Renderer): Hono {
     const participant = participantOf(brief, claim.participantId);
     if (participant === undefined) return c.html(gone("This link is not for a participant of this brief."), 403);
 
+    // What they said last time, if anything. A respondent who reopens their link
+    // is usually checking what they submitted, and a page that answers that with
+    // an empty form invites them to answer twice.
+    const mine = (await deps.briefs.responsesOf(brief.id)).find((r) => r.participantId === participant.id);
+
+    if (mine !== undefined) {
+      return c.html(
+        renderer.render({
+          brief,
+          participation: { state: "answered", participant, submittedAt: mine.submittedAt, values: mine.answers },
+          banner: isClosed(brief)
+            ? { title: "Collection has closed", body: "Your answers are below, as they were recorded." }
+            : { title: "You have answered", body: "Your answers are below. There is nothing further to do." },
+        }),
+      );
+    }
+
     if (isClosed(brief)) {
       return c.html(
         renderer.render({
@@ -36,7 +53,7 @@ export function participantApp(deps: Deps, renderer: Renderer): Hono {
     return c.html(
       renderer.render({
         brief,
-        form: { participant, action: `/r/${token}`, errors: {}, values: {} },
+        participation: { state: "answering", participant, action: `/r/${token}`, errors: {}, values: {} },
       }),
     );
   });
@@ -54,16 +71,33 @@ export function participantApp(deps: Deps, renderer: Renderer): Hono {
     const outcome = await recordResponse(deps, token, answers);
 
     if (outcome.ok) {
+      // Read back what was stored rather than echoing what was posted: if the
+      // two ever differ, the page should show what the agent will actually see.
+      const stored = (await deps.briefs.responsesOf(outcome.brief.id)).find(
+        (r) => r.participantId === claim.participantId,
+      );
+      const participant = participantOf(outcome.brief, claim.participantId);
+      const banner = {
+        title: "Answers recorded",
+        body: outcome.closed
+          ? "That was the last response needed. The agent has what it asked for."
+          : "Your answers are below. You can close this page.",
+      };
       return c.html(
-        renderer.render({
-          brief: outcome.brief,
-          banner: {
-            title: "Answers recorded",
-            body: outcome.closed
-              ? "That was the last response needed. The agent has what it asked for."
-              : "Thank you. You can close this page.",
-          },
-        }),
+        renderer.render(
+          stored === undefined || participant === undefined
+            ? { brief: outcome.brief, banner }
+            : {
+                brief: outcome.brief,
+                participation: {
+                  state: "answered",
+                  participant,
+                  submittedAt: stored.submittedAt,
+                  values: stored.answers,
+                },
+                banner,
+              },
+        ),
       );
     }
 
@@ -83,7 +117,7 @@ export function participantApp(deps: Deps, renderer: Renderer): Hono {
         ? gone("This link is not for a participant of this brief.")
         : renderer.render({
             brief,
-            form: { participant, action: `/r/${token}`, errors, values: answers },
+            participation: { state: "answering", participant, action: `/r/${token}`, errors, values: answers },
             banner: { title: "Not submitted", body: "Some answers need attention before this can be recorded." },
           }),
       400,

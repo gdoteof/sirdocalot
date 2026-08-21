@@ -85,15 +85,28 @@ export type Notifier = {
 // missing a field.
 export type RenderView = {
   brief: Brief;
-  form?: {
-    participant: Participant;
-    action: string;
-    errors: Record<string, string>;
-    values: Record<string, Answer>;
-  };
+  participation?: Participation;
   results?: Coalesced;
   banner?: { title: string; body: string };
 };
+
+// A participant's standing with this brief. They may answer, or they already
+// have. One field rather than two, because a page offering a form beside the
+// answers already given is a page asking a question it has the answer to.
+export type Participation =
+  | {
+      state: "answering";
+      participant: Participant;
+      action: string;
+      errors: Record<string, string>;
+      values: Record<string, Answer>;
+    }
+  | {
+      state: "answered";
+      participant: Participant;
+      submittedAt: string;
+      values: Record<string, Answer>;
+    };
 
 export type Renderer = { render(view: RenderView): string };
 

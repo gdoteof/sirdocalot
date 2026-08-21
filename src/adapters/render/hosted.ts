@@ -11,30 +11,48 @@ import { STYLE } from "./style.ts";
 export function hostedRenderer(): Renderer {
   return {
     render(view: RenderView): string {
-      const { brief, form } = view;
+      const { brief, participation } = view;
       const collecting = fieldsOf(brief.blocks).length > 0;
+      const answering = participation?.state === "answering";
 
-      const body = renderBlocks(
-        brief.blocks,
-        form !== undefined
-          ? { interactive: true, values: form.values, errors: form.errors }
-          : { interactive: false, values: {}, errors: {} },
-      );
+      // Answers already given are rendered into the same controls that collected
+      // them, disabled. A respondent checking what they said should see the
+      // question they said it under, not a list of values.
+      const body = renderBlocks(brief.blocks, {
+        interactive: answering,
+        values: participation?.values ?? {},
+        errors: participation?.state === "answering" ? participation.errors : {},
+      });
 
       const inner =
-        form !== undefined
-          ? `<form method="post" action="${escapeHtml(form.action)}" novalidate>
+        participation?.state === "answering"
+          ? `<form method="post" action="${escapeHtml(participation.action)}" novalidate>
                ${body}
                <div class="actions">
                  <button type="submit">Submit</button>
-                 <span class="note">Answering as ${escapeHtml(form.participant.name)}</span>
+                 <span class="note">Answering as ${escapeHtml(participation.participant.name)}</span>
                </div>
              </form>`
-          : body + (view.results !== undefined ? renderBlocks(resultBlocks(view.results, brief.participants)) : "");
+          : participation?.state === "answered"
+            ? `${body}
+               <p class="note">Answered by ${escapeHtml(participation.participant.name)} on ${escapeHtml(
+                 submittedOn(participation.submittedAt),
+               )}.</p>`
+            : body + (view.results !== undefined ? renderBlocks(resultBlocks(view.results, brief.participants)) : "");
 
       return page(brief.title, brief.intent.purpose, collecting, view, inner);
     },
   };
+}
+
+// The stored timestamp is an instant; what a respondent wants from it is the day
+// they answered. Rendered in UTC so the page does not claim a timezone it cannot
+// know from a server.
+function submittedOn(iso: string): string {
+  const at = new Date(iso);
+  return Number.isNaN(at.getTime())
+    ? iso
+    : `${at.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })} at ${at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC`;
 }
 
 function page(
